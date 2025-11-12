@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каталог продукции - Термоконт</title>
+    <meta name="description" content="Каталог пирометров и тепловизоров от российского производителя">
+    <link rel="stylesheet" href="css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Yanone+Kaffeesatz:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header__content">
+                <a href="index.html" class="logo">
+                    <img src="images/logo.png" alt="Термоконт" class="logo__img">
+                    <span class="logo__text">ТЕРМОКОНТ</span>
+                </a>
+                <nav class="nav">
+                    <a href="index.html" class="nav__link">Главная</a>
+                    <a href="catalog.html" class="nav__link active">Каталог</a>
+                    <a href="blog.html" class="nav__link">Блог</a>
+                    <a href="documents.html" class="nav__link">Документы</a>
+                    <a href="index.html#contacts" class="nav__link">Контакты</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Catalog Hero -->
+    <section class="page-hero">
+        <div class="container">
+            <div class="page-hero__content">
+                <h1 class="page-hero__title">Каталог продукции</h1>
+                <p class="page-hero__description">Широкий ассортимент пирометров и тепловизоров для промышленности</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Catalog Section -->
+    <section class="catalog">
+        <div class="container">
+            <div class="filters__layout">
+                <!-- Основные фильтры -->
+                <div class="filters__main" id="filtersMain">
+                    <div class="filters__header">
+                        <h2>Фильтры</h2>
+                        <button class="btn btn--outline btn--sm" id="resetFilters">Сбросить все</button>
+                    </div>
+                    
+                    <!-- Поиск -->
+                    <div class="filters__search-sort">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="Поиск по названию или артикулу...">
+                        </div>
+                    </div>
+
+                    <!-- Группы фильтров -->
+                    <div class="filters__groups">
+                        <!-- Диапазон температур с ползунком -->
+                        <div class="filter-group">
+                            <h3>Диапазон температур (°C)</h3>
+                            <div class="temperature-range">
+                                <div class="range-slider">
+                                    <div class="range-track" id="rangeTrack"></div>
+                                    <input type="range" id="tempMin" class="range-min" min="0" max="3000" value="0" step="50">
+                                    <input type="range" id="tempMax" class="range-max" min="0" max="3000" value="3000" step="50">
+                                </div>
+                                <div class="range-values">
+                                    <span id="minValue">0°C</span>
+                                    <span id="maxValue">3000°C</span>
+                                </div>
+                                <div class="range-inputs">
+                                    <div class="range-input">
+                                        <label>От:</label>
+                                        <input type="number" id="tempMinInput" value="0" min="0" max="3000">
+                                    </div>
+                                    <div class="range-input">
+                                        <label>До:</label>
+                                        <input type="number" id="tempMaxInput" value="3000" min="0" max="3000">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Визирование -->
+                        <div class="filter-group">
+                            <h3>Показатель визирования</h3>
+                            <div class="filter-options">
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="40:1" data-filter="визирование">
+                                    <span>40:1</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="80:1" data-filter="визирование">
+                                    <span>80:1</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="200:1" data-filter="визирование">
+                                    <span>200:1</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="300:1" data-filter="визирование">
+                                    <span>300:1</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Погрешность -->
+                        <div class="filter-group">
+                            <h3>Погрешность</h3>
+                            <div class="filter-options">
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="0.005" data-filter="погрешность">
+                                    <span>±0.005</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="0.01" data-filter="погрешность">
+                                    <span>±0.01</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="0.02" data-filter="погрешность">
+                                    <span>±0.02</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="0.05" data-filter="погрешность">
+                                    <span>±0.05</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Спектральный диапазон -->
+                        <div class="filter-group">
+                            <h3>Спектральный диапазон</h3>
+                            <div class="filter-options">
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="0.9-4.5 мкм" data-filter="спектральныйДиапазон">
+                                    <span>0,9-4,5 мкм</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="0.9-1.6 мкм" data-filter="спектральныйДиапазон">
+                                    <span>0,9-1,6 мкм</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="0.9-1.1 мкм" data-filter="спектральныйДиапазон">
+                                    <span>0,9-1,1 мкм</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="0.6-0.9 и 0.9-1.1 мкм" data-filter="спектральныйДиапазон">
+                                    <span>0,6-0,9 и 0,9-1,1 мкм</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Принцип действия -->
+                        <div class="filter-group">
+                            <h3>Принцип действия</h3>
+                            <div class="filter-options">
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Энергетический (яркостной)" data-filter="принципДействия">
+                                    <span>Энергетический (яркостной)</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Спектрального отношения" data-filter="принципДействия">
+                                    <span>Спектрального отношения</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Радиационный" data-filter="принципДействия">
+                                    <span>Радиационный</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Материалы -->
+                        <div class="filter-group">
+                            <h3>Материалы</h3>
+                            <div class="filter-options">
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Нержавеющая сталь" data-filter="материалы">
+                                    <span>Нержавеющая сталь</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Алюминий" data-filter="материалы">
+                                    <span>Алюминий</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Титан" data-filter="материалы">
+                                    <span>Титан</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Керамика" data-filter="материалы">
+                                    <span>Керамика</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Исполнение -->
+                        <div class="filter-group">
+                            <h3>Исполнение</h3>
+                            <div class="filter-options">
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Переносной" data-filter="исполнение">
+                                    <span>Переносной</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Стационарный" data-filter="исполнение">
+                                    <span>Стационарный</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Портативный" data-filter="исполнение">
+                                    <span>Портативный</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Быстродействие -->
+                        <div class="filter-group">
+                            <h3>Быстродействие</h3>
+                            <div class="filter-options">
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Стандартное" data-filter="быстродействие">
+                                    <span>Стандартное (0,3 с)</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Быстродействующий" data-filter="быстродействие">
+                                    <span>Быстродействующий (50 мс)</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Высокоскоростной" data-filter="быстродействие">
+                                    <span>Высокоскоростной (10 мс)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Точность -->
+                        <div class="filter-group">
+                            <h3>Точность</h3>
+                            <div class="filter-options">
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Обычная" data-filter="точность">
+                                    <span>Обычная (±1%)</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Повышенная" data-filter="точность">
+                                    <span>Повышенная (±0.5%)</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Высокая" data-filter="точность">
+                                    <span>Высокая (±0.1%)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Устройство визирования -->
+                        <div class="filter-group">
+                            <h3>Устройство визирования</h3>
+                            <div class="filter-options">
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Оптический прицел" data-filter="устройствоВизирования">
+                                    <span>Оптический прицел</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Лазерный целеуказатель" data-filter="устройствоВизирования">
+                                    <span>Лазерный целеуказатель</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="Видеокамера" data-filter="устройствоВизирования">
+                                    <span>Видеокамера</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Госреестр -->
+                        <div class="filter-group">
+                            <h3>Госреестр</h3>
+                            <div class="filter-options">
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="да" data-filter="госреестр">
+                                    <span>Внесен в Госреестр</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Контент каталога -->
+                <div class="filters__content">
+                    <div class="catalog__results">
+                        <div class="results__header">
+                            <div class="results__info">
+                                <span id="resultsCount">Найдено товаров: 0</span>
+                                <div class="sort-group">
+                                    <label for="sortSelect">Сортировка:</label>
+                                    <select id="sortSelect" class="filter-select">
+                                        <option value="name_asc">По названию (А-Я)</option>
+                                        <option value="name_desc">По названию (Я-А)</option>
+                                        <option value="price_asc">По цене (возрастание)</option>
+                                        <option value="price_desc">По цене (убывание)</option>
+                                        <option value="temp_asc">По температуре (min)</option>
+                                        <option value="temp_desc">По температуре (max)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="btn btn--outline" id="toggleFilters">
+                                <i class="fas fa-filter"></i>
+                                Фильтры
+                            </button>
+                        </div>
+                        
+                        <div class="catalog__grid" id="catalogGrid">
+                            <!-- Products will be loaded by JavaScript -->
+                        </div>
+
+                        <!-- Пагинация -->
+                        <div class="catalog__pagination" id="pagination">
+                            <button class="pagination__btn" id="prevPage" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                                Назад
+                            </button>
+                            
+                            <div class="pagination__numbers" id="paginationNumbers">
+                                <!-- Page numbers will be generated by JavaScript -->
+                            </div>
+                            
+                            <button class="pagination__btn" id="nextPage">
+                                Вперед
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading State -->
+    <div class="catalog__loading" id="catalogLoading">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Загрузка каталога...</p>
+    </div>
+
+    <!-- Consultation Section -->
+    <section class="consultation">
+        <div class="container">
+            <div class="consultation__content">
+                <h2>Нужна консультация?</h2>
+                <p>Наши специалисты помогут подобрать оборудование для ваших задач</p>
+                <div class="consultation__buttons">
+                    <button class="btn btn--primary" onclick="openChat()">Получить консультацию</button>
+                    <a href="index.html#contacts" class="btn btn--outline">Связаться с нами</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer__content">
+                <div class="footer__logo">
+                    <a href="index.html" class="footer__logo-link">
+                        <img src="images/logo.png" alt="Термоконт">
+                        <span class="footer__logo-text">ТЕРМОКОНТ</span>
+                    </a>
+                    <p class="footer__description">Российский производитель пирометров и тепловизоров</p>
+                </div>
+                <div class="footer__menu">
+                    <h3>Меню</h3>
+                    <a href="index.html">Главная</a>
+                    <a href="catalog.html">Каталог</a>
+                    <a href="blog.html">Блог</a>
+                    <a href="documents.html">Документы</a>
+                    <a href="index.html#contacts">Контакты</a>
+                </div>
+                <div class="footer__docs">
+                    <h3>Документы</h3>
+                    <a href="documents.html#licenses">Лицензии</a>
+                    <a href="documents.html#certificates">Сертификаты</a>
+                    <a href="documents.html#technical">Техническая документация</a>
+                </div>
+                <div class="footer__contacts">
+                    <h3>Контакты</h3>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-phone"></i>
+                        <span>+7 (495) 943-68-18</span>
+                    </div>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>perometer@inbox.ru</span>
+                    </div>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Москва, ул.Озёрная, д.42</span>
+                    </div>
+                </div>
+            </div>
+            <div class="footer__bottom">
+                <p>&copy; 2025 Термоконт. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu">
+        <a href="index.html" class="mobile-menu__item">
+            <i class="fas fa-home"></i>
+            <span>Главная</span>
+        </a>
+        <a href="catalog.html" class="mobile-menu__item active">
+            <i class="fas fa-th-large"></i>
+            <span>Каталог</span>
+        </a>
+        <a href="blog.html" class="mobile-menu__item">
+            <i class="fas fa-newspaper"></i>
+            <span>Блог</span>
+        </a>
+        <a href="index.html#contacts" class="mobile-menu__item">
+            <i class="fas fa-phone"></i>
+            <span>Контакты</span>
+        </a>
+    </div>
+
+    <!-- Chat Widget -->
+    <div class="chat-widget">
+        <button class="chat-widget__button">
+            <i class="fas fa-comment"></i>
+        </button>
+        <div class="chat-widget__popup">
+            <div class="chat-widget__header">
+                <h3>Оформить Заказ</h3>
+                <button class="chat-widget__close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="chat-widget__form">
+                <input type="email" placeholder="Email" required>
+                <input type="text" placeholder="Имя" required>
+                <input type="text" placeholder="Какие товары" required>
+                <button type="submit" class="btn btn--primary">Оформить</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Popup -->
+    <div class="product-popup" id="productPopup">
+        <div class="product-popup__overlay"></div>
+        <div class="product-popup__content">
+            <button class="product-popup__close">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="product-popup__body" id="productPopupBody">
+                <!-- Content will be loaded by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+    <script src="js/catalog.js"></script>
+    
+    <!-- Упрощенный скрипт для инициализации -->
+    <script>
+        // Инициализация каталога
+        document.addEventListener('DOMContentLoaded', function() {
+            // CatalogManager автоматически инициализируется из catalog.js
+            console.log('Каталог инициализирован');
+            
+            // Дополнительные обработчики для чата
+            const chatClose = document.querySelector('.chat-widget__close');
+            if (chatClose) {
+                chatClose.addEventListener('click', function() {
+                    const popup = document.querySelector('.chat-widget__popup');
+                    if (popup) {
+                        popup.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Отправка формы чата
+            const chatForm = document.querySelector('.chat-widget__form');
+            if (chatForm) {
+                chatForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const productInput = this.querySelector('input[placeholder="Какие товары"]');
+                    const productName = productInput ? productInput.value : 'товар';
+                    
+                    alert(`Заказ на ${productName} отправлен! Мы свяжемся с вами в ближайшее время.`);
+                    this.reset();
+                    
+                    const popup = document.querySelector('.chat-widget__popup');
+                    if (popup) {
+                        popup.classList.remove('active');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

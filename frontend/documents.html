@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Документы - Термоконт</title>
+    <meta name="description" content="Лицензии, сертификаты и техническая документация">
+    <link rel="stylesheet" href="css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Yanone+Kaffeesatz:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header__content">
+                <a href="index.html" class="logo">
+                    <img src="images/logo.png" alt="Термоконт" class="logo__img">
+                    <span class="logo__text">ТЕРМОКОНТ</span>
+                </a>
+                <nav class="nav">
+                    <a href="index.html" class="nav__link">Главная</a>
+                    <a href="catalog.html" class="nav__link">Каталог</a>
+                    <a href="blog.html" class="nav__link">Блог</a>
+                    <a href="documents.html" class="nav__link active">Документы</a>
+                    <a href="index.html#contacts" class="nav__link">Контакты</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Documents Hero -->
+    <section class="page-hero">
+        <div class="container">
+            <div class="page-hero__content">
+                <h1 class="page-hero__title">Документы</h1>
+                <p class="page-hero__description">Вся необходимая документация на нашу продукцию</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documents Navigation -->
+    <section class="documents-nav">
+        <div class="container">
+            <div class="documents-nav__content">
+                <a href="#licenses" class="documents-nav__link active">Лицензии</a>
+                <a href="#certificates" class="documents-nav__link">Сертификаты</a>
+                <a href="#technical" class="documents-nav__link">Техническая документация</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Licenses Section -->
+    <section class="documents-section" id="licenses">
+        <div class="container">
+            <h2 class="documents-section__title">Лицензии</h2>
+            <div class="documents-grid">
+                <!-- License 1 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Лицензия на производство</h3>
+                        <p class="document-card__description">Лицензия на осуществление деятельности по производству средств измерений</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__date">Выдана: 15.03.2023</span>
+                            <span class="document-card__number">№ ЛП-123456</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/licenses/license1.pdf" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </a>
+                            <button class="btn btn--outline document-preview" data-document="documents/licenses/license1.jpg">
+                                <i class="fas fa-eye"></i> Просмотр
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- License 2 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-balance-scale"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Лицензия МЧС</h3>
+                        <p class="document-card__description">Лицензия на деятельность по монтажу, техническому обслуживанию и ремонту средств обеспечения пожарной безопасности</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__date">Выдана: 20.05.2023</span>
+                            <span class="document-card__number">№ ЛМ-789012</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/licenses/license2.pdf" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </a>
+                            <button class="btn btn--outline document-preview" data-document="documents/licenses/license2.jpg">
+                                <i class="fas fa-eye"></i> Просмотр
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- License 3 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-industry"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Лицензия Ростехнадзора</h3>
+                        <p class="document-card__description">Лицензия на деятельность в области промышленной безопасности</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__date">Выдана: 10.08.2023</span>
+                            <span class="document-card__number">№ ЛР-345678</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/licenses/license3.pdf" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </a>
+                            <button class="btn btn--outline document-preview" data-document="documents/licenses/license3.jpg">
+                                <i class="fas fa-eye"></i> Просмотр
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Certificates Section -->
+    <section class="documents-section" id="certificates">
+        <div class="container">
+            <h2 class="documents-section__title">Сертификаты</h2>
+            <div class="documents-grid">
+                <!-- Certificate 1 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-award"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Сертификат соответствия ГОСТ</h3>
+                        <p class="document-card__description">Сертификат соответствия требованиям ГОСТ на пирометры серии ПТ-100</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__date">Выдан: 05.02.2024</span>
+                            <span class="document-card__number">№ СГ-112233</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/certificates/certificate1.pdf" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </a>
+                            <button class="btn btn--outline document-preview" data-document="documents/certificates/certificate1.jpg">
+                                <i class="fas fa-eye"></i> Просмотр
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Certificate 2 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-certificate"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Сертификат качества ISO 9001</h3>
+                        <p class="document-card__description">Сертификат системы менеджмента качества ISO 9001:2015</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__date">Выдан: 15.03.2024</span>
+                            <span class="document-card__number">№ СИ-445566</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/certificates/certificate2.pdf" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </a>
+                            <button class="btn btn--outline document-preview" data-document="documents/certificates/certificate2.jpg">
+                                <i class="fas fa-eye"></i> Просмотр
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Certificate 3 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Сертификат взрывозащиты</h3>
+                        <p class="document-card__description">Сертификат взрывозащиты для оборудования, работающего во взрывоопасных средах</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__date">Выдан: 25.04.2024</span>
+                            <span class="document-card__number">№ СВ-778899</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/certificates/certificate3.pdf" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </a>
+                            <button class="btn btn--outline document-preview" data-document="documents/certificates/certificate3.jpg">
+                                <i class="fas fa-eye"></i> Просмотр
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technical Documentation Section -->
+    <section class="documents-section" id="technical">
+        <div class="container">
+            <h2 class="documents-section__title">Техническая документация</h2>
+            <div class="documents-grid">
+                <!-- Manual 1 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Руководство по эксплуатации ПТ-100</h3>
+                        <p class="document-card__description">Полное руководство по эксплуатации пирометра ПТ-100</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__version">Версия: 2.1</span>
+                            <span class="document-card__size">Размер: 4.2 MB</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/technical/manual-pt100.pdf" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual 2 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Техническое описание ТВ-200</h3>
+                        <p class="document-card__description">Техническое описание тепловизора ТВ-200</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__version">Версия: 1.3</span>
+                            <span class="document-card__size">Размер: 3.8 MB</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/technical/spec-tv200.pdf" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual 3 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Инструкция по монтажу</h3>
+                        <p class="document-card__description">Инструкция по монтажу и настройке стационарных пирометров</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__version">Версия: 1.5</span>
+                            <span class="document-card__size">Размер: 2.1 MB</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/technical/installation.pdf" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual 4 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-file-medical-alt"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Руководство по техническому обслуживанию</h3>
+                        <p class="document-card__description">Руководство по техническому обслуживанию и ремонту</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__version">Версия: 1.2</span>
+                            <span class="document-card__size">Размер: 5.3 MB</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/technical/maintenance.pdf" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual 5 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-microchip"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Программное обеспечение</h3>
+                        <p class="document-card__description">Программное обеспечение для работы с тепловизорами</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__version">Версия: 3.0.1</span>
+                            <span class="document-card__size">Размер: 28.7 MB</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/technical/software.zip" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать ZIP
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual 6 -->
+                <div class="document-card">
+                    <div class="document-card__icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="document-card__content">
+                        <h3 class="document-card__title">Часто задаваемые вопросы</h3>
+                        <p class="document-card__description">Ответы на часто задаваемые вопросы по продукции</p>
+                        <div class="document-card__meta">
+                            <span class="document-card__version">Версия: 1.8</span>
+                            <span class="document-card__size">Размер: 1.2 MB</span>
+                        </div>
+                        <div class="document-card__actions">
+                            <a href="documents/technical/faq.pdf" class="btn btn--primary" download>
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Document Preview Modal -->
+    <div class="modal" id="documentModal">
+        <div class="modal__content">
+            <div class="modal__header">
+                <h3 class="modal__title">Просмотр документа</h3>
+                <button class="modal__close" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal__body">
+                <img id="modalImage" src="" alt="Просмотр документа">
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer__content">
+                <div class="footer__logo">
+                    <a href="index.html" class="footer__logo-link">
+                        <img src="images/logo.png" alt="Термоконт">
+                        <span class="footer__logo-text">ТЕРМОКОНТ</span>
+                    </a>
+                    <p class="footer__description">Российский производитель пирометров и тепловизоров</p>
+                </div>
+                <div class="footer__menu">
+                    <h3>Меню</h3>
+                    <a href="index.html">Главная</a>
+                    <a href="catalog.html">Каталог</a>
+                    <a href="blog.html">Блог</a>
+                    <a href="documents.html">Документы</a>
+                    <a href="index.html#contacts">Контакты</a>
+                </div>
+                <div class="footer__docs">
+                    <h3>Документы</h3>
+                    <a href="documents.html#licenses">Лицензии</a>
+                    <a href="documents.html#certificates">Сертификаты</a>
+                    <a href="documents.html#technical">Техническая документация</a>
+                </div>
+                <div class="footer__contacts">
+                    <h3>Контакты</h3>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-phone"></i>
+                        <span>+7 (495) 943-68-18</span>
+                    </div>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>perometer@inbox.ru</span>
+                    </div>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Москва, ул.Озёрная, д.42</span>
+                    </div>
+                </div>
+            </div>
+            <div class="footer__bottom">
+                <p>&copy; 2025 Термоконт. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu">
+        <a href="index.html" class="mobile-menu__item">
+            <i class="fas fa-home"></i>
+            <span>Главная</span>
+        </a>
+        <a href="catalog.html" class="mobile-menu__item">
+            <i class="fas fa-th-large"></i>
+            <span>Каталог</span>
+        </a>
+        <a href="blog.html" class="mobile-menu__item">
+            <i class="fas fa-newspaper"></i>
+            <span>Блог</span>
+        </a>
+        <a href="documents.html" class="mobile-menu__item active">
+            <i class="fas fa-file-alt"></i>
+            <span>Документы</span>
+        </a>
+    </div>
+
+    <!-- Chat Widget -->
+    <div class="chat-widget">
+        <button class="chat-widget__button">
+            <i class="fas fa-comment"></i>
+        </button>
+        <div class="chat-widget__popup">
+            <div class="chat-widget__header">
+                <h3>Оформить Заказ</h3>
+                <button class="chat-widget__close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="chat-widget__form">
+                <input type="email" placeholder="Email" required>
+                <input type="text" placeholder="Имя" required>
+                <input type="text" placeholder="Какие товары" required>
+                <button type="submit" class="btn btn--primary">Оформить</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+    <script src="js/documents.js"></script>
+</body>
+</html>

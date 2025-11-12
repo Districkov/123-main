@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Блог - Термоконт</title>
+    <meta name="description" content="Статьи и новости о пирометрах и тепловизорах">
+    <link rel="stylesheet" href="css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Yanone+Kaffeesatz:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Дополнительные стили для блога */
+        .blog__grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .blog-card {
+            background: var(--white);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .blog-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .blog-card__image {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .blog-card__image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .blog-card:hover .blog-card__image img {
+            transform: scale(1.05);
+        }
+
+        .blog-card__content {
+            padding: 25px;
+        }
+
+        .blog-card__category {
+            display: inline-block;
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .blog-card__title {
+            font-family: 'Yanone Kaffeesatz', sans-serif;
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--secondary-color);
+            line-height: 1.3;
+        }
+
+        .blog-card__excerpt {
+            color: var(--text-light);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .blog-card__meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-light);
+            font-size: 13px;
+        }
+
+        .blog-card__meta-left {
+            display: flex;
+            gap: 15px;
+        }
+
+        .blog-card__meta i {
+            margin-right: 5px;
+            color: var(--primary-color);
+        }
+
+        .blog-card__read-more {
+            background: var(--primary-color);
+            color: var(--white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .blog-card__read-more:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .blog__loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .blog__loading i {
+            font-size: 40px;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .blog__error {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--error-color);
+        }
+
+        .blog__empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        /* Стили для попапов статей */
+        .article-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .article-popup.active {
+            display: flex;
+        }
+
+        .article-popup__overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .article-popup__content {
+            background: var(--white);
+            border-radius: 20px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: auto;
+            position: relative;
+            z-index: 3001;
+            animation: slideUp 0.4s ease;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .article-popup__close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--white);
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            z-index: 3002;
+            box-shadow: var(--shadow-hover);
+        }
+
+        .article-popup__close:hover {
+            background: var(--primary-color);
+            color: var(--white);
+            transform: rotate(90deg) scale(1.1);
+        }
+
+        .article-popup__body {
+            padding: 40px;
+        }
+
+        .article-popup__header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .article-popup__category {
+            display: inline-block;
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .article-popup__title {
+            font-family: 'Yanone Kaffeesatz', sans-serif;
+            font-size: 36px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--secondary-color);
+            line-height: 1.2;
+        }
+
+        .article-popup__meta {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .article-popup__meta i {
+            margin-right: 5px;
+            color: var(--primary-color);
+        }
+
+        .article-popup__image {
+            width: 100%;
+            height: 400px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .article-popup__image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .article-popup__content-text {
+            line-height: 1.8;
+            color: var(--text-color);
+        }
+
+        .article-popup__content-text p {
+            margin-bottom: 20px;
+        }
+
+        .article-popup__content-text h3 {
+            font-family: 'Yanone Kaffeesatz', sans-serif;
+            font-size: 24px;
+            margin: 30px 0 15px;
+            color: var(--secondary-color);
+        }
+
+        .article-popup__content-text ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+
+        .article-popup__content-text li {
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 15px;
+        }
+
+        .article-popup__content-text li:before {
+            content: '•';
+            color: var(--primary-color);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        /* Анимации */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .blog__grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .article-popup__content {
+                margin: 20px;
+                max-height: 85vh;
+            }
+
+            .article-popup__body {
+                padding: 25px;
+            }
+
+            .article-popup__title {
+                font-size: 28px;
+            }
+
+            .article-popup__image {
+                height: 250px;
+            }
+
+            .article-popup__meta {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .blog-card__meta {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .blog-card__read-more {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header__content">
+                <a href="index.html" class="logo">
+                    <img src="images/logo.png" alt="Термоконт" class="logo__img">
+                    <span class="logo__text">ТЕРМОКОНТ</span>
+                </a>
+                <nav class="nav">
+                    <a href="index.html" class="nav__link">Главная</a>
+                    <a href="catalog.html" class="nav__link">Каталог</a>
+                    <a href="blog.html" class="nav__link active">Блог</a>
+                    <a href="documents.html" class="nav__link">Документы</a>
+                    <a href="index.html#contacts" class="nav__link">Контакты</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Blog Hero -->
+    <section class="page-hero">
+        <div class="container">
+            <div class="page-hero__content">
+                <h1 class="page-hero__title">Блог</h1>
+                <p class="page-hero__description">Статьи, новости и полезная информация о тепловизионной технике</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Blog Content -->
+    <section class="blog">
+        <div class="container">
+            <div class="blog__content">
+                <div class="blog__grid" id="blogGrid">
+                    <!-- Статьи будут загружены через JavaScript -->
+                </div>
+                
+                <!-- Состояние загрузки -->
+                <div class="blog__loading" id="blogLoading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Загрузка статей...</p>
+                </div>
+
+                <!-- Сообщение об ошибке -->
+                <div class="blog__error" id="blogError" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Ошибка загрузки статей</h3>
+                    <p>Попробуйте обновить страницу</p>
+                    <button class="btn btn--primary" onclick="location.reload()">Обновить</button>
+                </div>
+
+                <!-- Сообщение об отсутствии статей -->
+                <div class="blog__empty" id="blogEmpty" style="display: none;">
+                    <i class="fas fa-newspaper"></i>
+                    <h3>Статьи не найдены</h3>
+                    <p>В данный момент нет доступных статей</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Article Popup Container -->
+    <div class="article-popup" id="articlePopup">
+        <div class="article-popup__overlay"></div>
+        <div class="article-popup__content">
+            <button class="article-popup__close">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="article-popup__body" id="articlePopupBody">
+                <!-- Содержимое статьи будет загружено через JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer__content">
+                <div class="footer__logo">
+                    <a href="index.html" class="footer__logo-link">
+                        <img src="images/logo.png" alt="Термоконт">
+                        <span class="footer__logo-text">ТЕРМОКОНТ</span>
+                    </a>
+                    <p class="footer__description">Российский производитель пирометров и тепловизоров</p>
+                </div>
+                <div class="footer__menu">
+                    <h3>Меню</h3>
+                    <a href="index.html">Главная</a>
+                    <a href="catalog.html">Каталог</a>
+                    <a href="blog.html">Блог</a>
+                    <a href="documents.html">Документы</a>
+                    <a href="index.html#contacts">Контакты</a>
+                </div>
+                <div class="footer__docs">
+                    <h3>Документы</h3>
+                    <a href="documents.html#licenses">Лицензии</a>
+                    <a href="documents.html#certificates">Сертификаты</a>
+                    <a href="documents.html#technical">Техническая документация</a>
+                </div>
+                <div class="footer__contacts">
+                    <h3>Контакты</h3>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-phone"></i>
+                        <span>+7 (495) 943-68-18</span>
+                    </div>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>perometer@inbox.ru</span>
+                    </div>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Москва, ул.Озёрная, д.42</span>
+                    </div>
+                </div>
+            </div>
+            <div class="footer__bottom">
+                <p>&copy; 2025 Термоконт. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu">
+        <a href="index.html" class="mobile-menu__item">
+            <i class="fas fa-home"></i>
+            <span>Главная</span>
+        </a>
+        <a href="catalog.html" class="mobile-menu__item">
+            <i class="fas fa-th-large"></i>
+            <span>Каталог</span>
+        </a>
+        <a href="blog.html" class="mobile-menu__item active">
+            <i class="fas fa-newspaper"></i>
+            <span>Блог</span>
+        </a>
+        <a href="index.html#contacts" class="mobile-menu__item">
+            <i class="fas fa-phone"></i>
+            <span>Контакты</span>
+        </a>
+    </div>
+
+    <!-- Chat Widget -->
+    <div class="chat-widget">
+        <button class="chat-widget__button">
+            <i class="fas fa-comment"></i>
+        </button>
+        <div class="chat-widget__popup">
+            <div class="chat-widget__header">
+                <h3>Оформить Заказ</h3>
+                <button class="chat-widget__close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="chat-widget__form">
+                <input type="email" placeholder="Email" required>
+                <input type="text" placeholder="Имя" required>
+                <input type="text" placeholder="Какие товары" required>
+                <button type="submit" class="btn btn--primary">Оформить</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Класс для управления блогом
+        class BlogManager {
+            constructor() {
+                this.articles = [];
+                this.currentArticle = null;
+                this.init();
+            }
+
+            async init() {
+                await this.loadArticles();
+                this.setupEventListeners();
+                this.hideLoading();
+            }
+
+            async loadArticles() {
+                try {
+                    const response = await fetch('./data/articles.json');
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to load articles');
+                    }
+                    
+                    this.articles = await response.json();
+                    this.renderArticles();
+                    
+                } catch (error) {
+                    console.error('Error loading articles:', error);
+                    this.showError();
+                }
+            }
+
+            renderArticles() {
+                const grid = document.getElementById('blogGrid');
+                const emptyState = document.getElementById('blogEmpty');
+                
+                if (this.articles.length === 0) {
+                    grid.style.display = 'none';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                grid.innerHTML = this.articles.map(article => `
+                    <div class="blog-card" data-id="${article.id}">
+                        <div class="blog-card__image">
+                            <img src="${article.image}" alt="${article.title}" onerror="this.src='images/blog-placeholder.jpg'">
+                        </div>
+                        <div class="blog-card__content">
+                            <span class="blog-card__category">${article.category}</span>
+                            <h3 class="blog-card__title">${article.title}</h3>
+                            <p class="blog-card__excerpt">${article.excerpt}</p>
+                            <div class="blog-card__meta">
+                                <div class="blog-card__meta-left">
+                                    <span><i class="far fa-calendar"></i> ${article.date}</span>
+                                    <span><i class="far fa-clock"></i> ${article.readTime}</span>
+                                    <span><i class="far fa-eye"></i> ${article.views}</span>
+                                </div>
+                                <button class="blog-card__read-more" onclick="blogManager.openArticle(${article.id})">
+                                    Читать далее
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                grid.style.display = 'grid';
+                emptyState.style.display = 'none';
+            }
+
+            openArticle(articleId) {
+                const article = this.articles.find(a => a.id === articleId);
+                if (!article) return;
+
+                this.currentArticle = article;
+                const popupBody = document.getElementById('articlePopupBody');
+                
+                popupBody.innerHTML = this.createArticleContent(article);
+                document.getElementById('articlePopup').classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            createArticleContent(article) {
+                const contentHtml = article.content.map(item => {
+                    switch (item.type) {
+                        case 'paragraph':
+                            return `<p>${item.text}</p>`;
+                        case 'heading':
+                            return `<h3>${item.text}</h3>`;
+                        case 'list':
+                            return `
+                                <ul>
+                                    ${item.items.map(listItem => `<li>${listItem}</li>`).join('')}
+                                </ul>
+                            `;
+                        default:
+                            return '';
+                    }
+                }).join('');
+
+                return `
+                    <div class="article-popup__header">
+                        <span class="article-popup__category">${article.category}</span>
+                        <h1 class="article-popup__title">${article.title}</h1>
+                        <div class="article-popup__meta">
+                            <span><i class="far fa-calendar"></i> ${article.date}</span>
+                            <span><i class="far fa-clock"></i> ${article.readTime}</span>
+                            <span><i class="far fa-eye"></i> ${article.views}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="article-popup__image">
+                        <img src="${article.image}" alt="${article.title}" onerror="this.src='images/blog-placeholder.jpg'">
+                    </div>
+
+                    <div class="article-popup__content-text">
+                        ${contentHtml}
+                    </div>
+                `;
+            }
+
+            closeArticlePopup() {
+                document.getElementById('articlePopup').classList.remove('active');
+                document.body.style.overflow = '';
+                this.currentArticle = null;
+            }
+
+            setupEventListeners() {
+                // Закрытие попапа
+                document.querySelector('.article-popup__close').addEventListener('click', () => {
+                    this.closeArticlePopup();
+                });
+
+                document.querySelector('.article-popup__overlay').addEventListener('click', () => {
+                    this.closeArticlePopup();
+                });
+
+                // Закрытие по ESC
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.closeArticlePopup();
+                    }
+                });
+            }
+
+            hideLoading() {
+                document.getElementById('blogLoading').style.display = 'none';
+            }
+
+            showError() {
+                document.getElementById('blogLoading').style.display = 'none';
+                document.getElementById('blogError').style.display = 'block';
+            }
+        }
+
+        // Инициализация блога
+        let blogManager;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            blogManager = new BlogManager();
+            
+            // Обработчики для чата
+            const chatClose = document.querySelector('.chat-widget__close');
+            if (chatClose) {
+                chatClose.addEventListener('click', function() {
+                    document.querySelector('.chat-widget__popup').classList.remove('active');
+                });
+            }
+            
+            const chatForm = document.querySelector('.chat-widget__form');
+            if (chatForm) {
+                chatForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const productInput = this.querySelector('input[placeholder="Какие товары"]');
+                    const productName = productInput ? productInput.value : 'товар';
+                    
+                    alert(`Заказ на ${productName} отправлен! Мы свяжемся с вами в ближайшее время.`);
+                    this.reset();
+                    document.querySelector('.chat-widget__popup').classList.remove('active');
+                });
+            }
+        });
+
+        // Глобальные функции
+        window.openChat = function() {
+            const chatWidget = document.querySelector('.chat-widget');
+            if (chatWidget) {
+                const popup = chatWidget.querySelector('.chat-widget__popup');
+                if (popup) {
+                    popup.classList.add('active');
+                    
+                    setTimeout(() => {
+                        document.addEventListener('click', function closeChat(e) {
+                            if (!popup.contains(e.target) && !e.target.closest('.chat-widget__button')) {
+                                popup.classList.remove('active');
+                                document.removeEventListener('click', closeChat);
+                            }
+                        });
+                    }, 100);
+                }
+            }
+        };
+    </script>
+</body>
+</html>

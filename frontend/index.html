@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Термоконт - Пирометры и тепловизоры</title>
+    <meta name="description" content="Надежные пирометры и тепловизоры по выгодным ценам. Производство, консультации и сервис от российского производителя.">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/home.css">
+    <link href="https://fonts.googleapis.com/css2?family=Yanone+Kaffeesatz:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Яндекс Карты API -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=ac972b4d-7f89-4208-b8fa-95faa437acb4&lang=ru_RU" type="text/javascript"></script>
+    <!-- EmailJS -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script>
+    // Инициализация EmailJS
+    (function() {
+        emailjs.init("ggMEErezyaXf57w61"); // Замените на ваш Public Key
+    })();
+</script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header__content">
+                <a href="index.html" class="logo">
+                    <img src="images/logo.png" alt="Термоконт" class="logo__img">
+                    <span class="logo__text">ТЕРМОКОНТ</span>
+                </a>
+                <nav class="nav">
+                    <a href="index.html" class="nav__link active">Главная</a>
+                    <a href="catalog.html" class="nav__link">Каталог</a>
+                    <a href="blog.html" class="nav__link">Блог</a>
+                    <a href="documents.html" class="nav__link">Документы</a>
+                    <a href="index.html#contacts" class="nav__link">Контакты</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Slider -->
+    <section class="hero" id="main">
+        <div class="hero-slider">
+            <div class="slide active">
+                <div class="slide__content">
+                    <h1 class="slide__title">Пирометры и тепловизоры</h1>
+                    <p class="slide__description">Российское производство с гарантией качества для промышленности и энергетики</p>
+                    <a href="catalog.html" class="btn btn--primary">Смотреть каталог</a>
+                </div>
+                <div class="slide__image">
+                    <img src="images/1.png" alt="Пирометры">
+                </div>
+            </div>
+            <div class="slide">
+                <div class="slide__content">
+                    <h1 class="slide__title">Высокая точность измерений</h1>
+                    <p class="slide__description">Современное оборудование для контроля температуры</p>
+                    <a href="catalog.html" class="btn btn--primary">Узнать больше</a>
+                </div>
+                <div class="slide__image">
+                    <img src="images/2.png" alt="Тепловизоры">
+                </div>
+            </div>
+            <div class="slide">
+                <div class="slide__content">
+                    <h1 class="slide__title">Профессиональные решения</h1>
+                    <p class="slide__description">Для металлургии, энергетики и строительства</p>
+                    <a href="catalog.html" class="btn btn--primary">Наши решения</a>
+                </div>
+                <div class="slide__image">
+                    <img src="images/3.png" alt="Оборудование">
+                </div>
+            </div>
+        </div>
+        <div class="hero__indicators">
+            <span class="indicator active"></span>
+            <span class="indicator"></span>
+            <span class="indicator"></span>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about" id="about">
+        <div class="container">
+            <div class="about__content">
+                <h2 class="section-title">О компании</h2>
+                <div class="about__text">
+                    <p>ООО «Пирометр» — это ведущий российский разработчик и производитель приборов для бесконтактного измерения температуры. Мы создаем пирометры и тепловизоры, которые становятся надежными помощниками на предприятиях металлургии, машиностроения, энергетики, строительства и во многих других отраслях.</p>
+                    <p>Наша сила — в глубокой экспертизе и полном контроле над производственным циклом. Мы не просто продаем оборудование, мы сами конструируем, собираем и тестируем каждую единицу техники. Это позволяет нам предлагать рынку современные, точные и долговечные приборы по конкурентным ценам.</p>
+                </div>
+                <div class="about__buttons">
+                    <a href="blog.html" class="btn btn--outline">Читать блог</a>
+                    <a href="catalog.html" class="btn btn--primary">Смотреть каталог</a>
+                </div>
+            </div>
+        </div>
+        <div class="about__decoration about__decoration--left"></div>
+        <div class="about__decoration about__decoration--right"></div>
+    </section>
+
+    <!-- Advantages Section -->
+    <section class="advantages">
+        <div class="container">
+            <h2 class="section-title">Наши преимущества</h2>
+            <div class="advantages__grid">
+                <div class="advantage__card">
+                    <div class="advantage__icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3>Российское производство</h3>
+                    <p>Полный цикл производства на собственных мощностях в России</p>
+                </div>
+                <div class="advantage__card">
+                    <div class="advantage__icon">
+                        <i class="fas fa-award"></i>
+                    </div>
+                    <h3>Гарантия качества</h3>
+                    <p>Вся продукция сертифицирована и соответствует ГОСТ</p>
+                </div>
+                <div class="advantage__card">
+                    <div class="advantage__icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h3>Техническая поддержка</h3>
+                    <p>Квалифицированная поддержка и консультации</p>
+                </div>
+                <div class="advantage__card">
+                    <div class="advantage__icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h3>Сервисное обслуживание</h3>
+                    <p>Полный комплекс сервисных услуг и ремонта</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Section - Full Width -->
+    <section class="gallery" id="gallery">
+        <h2 class="section-title">Галерея продукции</h2>
+        <div class="gallery__slider">
+            <div class="gallery__track">
+                <div class="gallery__slide">
+                    <img src="images/product1.jpg" alt="Продукция 1">
+                </div>
+                <div class="gallery__slide">
+                    <img src="images/product2.jpg" alt="Продукция 2">
+                </div>
+                <div class="gallery__slide">
+                    <img src="images/product3.jpg" alt="Продукция 3">
+                </div>
+                <div class="gallery__slide">
+                    <img src="images/1.png" alt="Продукция 4">
+                </div>
+                <div class="gallery__slide">
+                    <img src="images/2.png" alt="Продукция 5">
+                </div>
+                <div class="gallery__slide">
+                    <img src="images/3.png" alt="Продукция 6">
+                </div>
+            </div>
+        </div>
+        <div class="gallery__indicators">
+            <span class="gallery__indicator active"></span>
+            <span class="gallery__indicator"></span>
+            <span class="gallery__indicator"></span>
+            <span class="gallery__indicator"></span>
+            <span class="gallery__indicator"></span>
+            <span class="gallery__indicator"></span>
+        </div>
+    </section>
+
+    <!-- Clients Section - Single Line -->
+    <section class="clients" id="clients">
+        <div class="container">
+            <h2 class="section-title">Наши партнеры</h2>
+            <div class="clients__slider">
+                <div class="clients__track">
+                    <div class="client__item">
+                        <img src="images/client1.png" alt="Северсталь">
+                    </div>
+                    <div class="client__item">
+                        <img src="images/client2.png" alt="ГХСЗ">
+                    </div>
+                    <div class="client__item">
+                        <img src="images/client3.png" alt="Композит">
+                    </div>
+                    <div class="client__item">
+                        <img src="images/client4.png" alt="НИАТ">
+                    </div>
+                    <div class="client__item">
+                        <img src="images/client5.png" alt="Росатом">
+                    </div>
+                    <div class="client__item">
+                        <img src="images/client6.png" alt="Русал">
+                    </div>
+                    <!-- Duplicate for seamless loop -->
+                    <div class="client__item">
+                        <img src="images/client1.png" alt="Северсталь">
+                    </div>
+                    <div class="client__item">
+                        <img src="images/client2.png" alt="ГХСЗ">
+                    </div>
+                    <div class="client__item">
+                        <img src="images/client3.png" alt="Композит">
+                    </div>
+                    <div class="client__item">
+                        <img src="images/client4.png" alt="НИАТ">
+                    </div>
+                    <div class="client__item">
+                        <img src="images/client5.png" alt="Росатом">
+                    </div>
+                    <div class="client__item">
+                        <img src="images/client6.png" alt="Русал">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contacts Section -->
+    <section class="contacts" id="contacts">
+        <div class="container">
+            <div class="contacts__content">
+                <div class="contacts__info">
+                    <h2 class="section-title">Контакты</h2>
+                    <div class="contact__item">
+                        <i class="fas fa-phone"></i>
+                        <div>
+                            <strong>Телефон</strong>
+                            <span>+7 (495) 943-68-18</span>
+                        </div>
+                    </div>
+                    <div class="contact__item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <strong>Email</strong>
+                            <span>perometer@inbox.ru</span>
+                        </div>
+                    </div>
+                    <div class="contact__item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <strong>Адрес</strong>
+                            <span>Москва, ул.Озёрная, д.42, помещение IV, комната 1 антресоли 2 этажа</span>
+                        </div>
+                    </div>
+                    <div class="contact__item">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <strong>Режим работы</strong>
+                            <span>Пн-Пт: 9:00-18:00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="contacts__map">
+                    <div id="map" style="width: 100%; height: 400px"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer__content">
+                <div class="footer__logo">
+                    <a href="index.html" class="footer__logo-link">
+                        <img src="images/logo.png" alt="Термоконт">
+                        <span class="footer__logo-text">ТЕРМОКОНТ</span>
+                    </a>
+                    <p class="footer__description">Российский производитель пирометров и тепловизоров</p>
+                </div>
+                <div class="footer__menu">
+                    <h3>Меню</h3>
+                    <a href="index.html">Главная</a>
+                    <a href="catalog.html">Каталог</a>
+                    <a href="blog.html">Блог</a>
+                    <a href="documents.html">Документы</a>
+                    <a href="index.html#contacts">Контакты</a>
+                </div>
+                <div class="footer__docs">
+                    <h3>Документы</h3>
+                    <a href="documents.html#licenses">Лицензии</a>
+                    <a href="documents.html#certificates">Сертификаты</a>
+                    <a href="documents.html#technical">Техническая документация</a>
+                </div>
+                <div class="footer__contacts">
+                    <h3>Контакты</h3>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-phone"></i>
+                        <span>+7 (495) 943-68-18</span>
+                    </div>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>perometer@inbox.ru</span>
+                    </div>
+                    <div class="footer__contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Москва, ул.Озёрная, д.42</span>
+                    </div>
+                </div>
+            </div>
+            <div class="footer__bottom">
+                <p>&copy; 2025 Термоконт. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu">
+        <a href="index.html" class="mobile-menu__item active">
+            <i class="fas fa-home"></i>
+            <span>Главная</span>
+        </a>
+        <a href="catalog.html" class="mobile-menu__item">
+            <i class="fas fa-th-large"></i>
+            <span>Каталог</span>
+        </a>
+        <a href="blog.html" class="mobile-menu__item">
+            <i class="fas fa-newspaper"></i>
+            <span>Блог</span>
+        </a>
+        <a href="documents.html" class="mobile-menu__item">
+            <i class="fas fa-file-alt"></i>
+            <span>Документы</span>
+        </a>
+    </div>
+
+    <!-- Chat Widget -->
+    <div class="chat-widget">
+        <button class="chat-widget__button">
+            <i class="fas fa-comment"></i>
+        </button>
+        <div class="chat-widget__popup">
+            <div class="chat-widget__header">
+                <h3>Оформить Заказ</h3>
+                <button class="chat-widget__close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="chat-widget__form" id="order-form">
+                <input type="text" name="name" placeholder="Ваше имя *" required>
+                <input type="email" name="email" placeholder="Ваш email *" required>
+                <input type="text" name="products" placeholder="Какие товары интересуют? *" required>
+                <textarea name="message" placeholder="Дополнительная информация" rows="3"></textarea>
+                <button type="submit" class="btn btn--primary">Отправить заявку</button>
+                <div class="form-message" id="form-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
