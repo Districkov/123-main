@@ -62,12 +62,17 @@ class CatalogManager {
 
     transformProductData(rawProduct) {
         // Преобразуем вашу структуру данных в формат, ожидаемый каталогом
+        const normalizedTitle = (rawProduct.title && rawProduct.title.toString().trim())
+            || (rawProduct.name && rawProduct.name.toString().trim())
+            || (rawProduct.sku && rawProduct.sku.toString().trim())
+            || '';
+
         return {
             id: rawProduct.id || '',
             sku: rawProduct.sku || '',
             category: rawProduct.category || '',
-            title: rawProduct.title || '',
-            description: rawProduct.description || '',
+            title: normalizedTitle,
+            description: rawProduct.description || rawProduct.excerpt || '',
             image: rawProduct.photo || '', // photo -> image
             price: rawProduct.price || 0,
             characteristics: {
@@ -436,23 +441,27 @@ class CatalogManager {
 
         grid.innerHTML = paginatedProducts.map(product => {
             const characteristics = product.characteristics || {};
+            const hasImage = Boolean(product.image && String(product.image).trim());
             
             return `
             <div class="product-card" data-id="${product.id}">
                 <div class="product-card__image">
-                    ${product.image ? 
-                        `<img src="${product.image}" alt="${product.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
+                    ${hasImage ? 
+                        `<img src="${product.image}" alt="${product.title}" onerror="this.remove(); const fallback=this.parentElement.querySelector('.product-card__no-image'); if(fallback) fallback.style.display='flex'; const overlay=this.parentElement.querySelector('.product-card__overlay'); if(overlay) overlay.innerHTML='<span class=&quot;product-card__no-image-label&quot;>Нет картинки</span>';">` : 
                         ''
                     }
-                    <div class="product-card__no-image" style="${product.image ? 'display: none;' : ''}">
+                    <div class="product-card__no-image" style="${hasImage ? 'display: none;' : ''}">
                         <i class="fas fa-camera"></i>
-                        <span>Изображение отсутствует</span>
+                        <span>Нет картинки</span>
                     </div>
-                    <div class="product-card__overlay">
+                    <div class="product-card__overlay ${hasImage ? '' : 'product-card__overlay--no-image'}">
+                        ${hasImage ? `
                         <button class="btn btn--primary product-card__detail-btn" onclick="catalog.openProductPopup('${product.id}')">
                             <i class="fas fa-eye"></i>
                             Подробнее
-                        </button>
+                        </button>` : `
+                        <span class="product-card__no-image-label">Нет картинки</span>
+                        `}
                     </div>
                 </div>
                 <div class="product-card__content">
@@ -733,14 +742,14 @@ class CatalogManager {
 // Глобальные функции
 function openChatWithProduct(productName, productSku) {
     const chatForm = document.querySelector('.chat-widget__form');
-    const productInput = chatForm.querySelector('input[placeholder="Какие товары"]');
+    const productInput = chatForm ? chatForm.querySelector('input[name="products"]') : null;
     
     if (productInput) {
         productInput.value = `${productName} (${productSku})`;
     }
     
     // Закрываем попап продукта если открыт
-    if (catalog.currentProduct) {
+    if (catalog && catalog.currentProduct) {
         catalog.closeProductPopup();
     }
     
@@ -749,17 +758,22 @@ function openChatWithProduct(productName, productSku) {
 
 function openChat() {
     const chatWidget = document.querySelector('.chat-widget');
+    if (!chatWidget) return;
+    
     const popup = chatWidget.querySelector('.chat-widget__popup');
+    if (!popup) return;
     
     popup.classList.add('active');
     
+    // Добавляем обработчик для закрытия при клике вне попапа
     setTimeout(() => {
-        document.addEventListener('click', function closeChat(e) {
+        const closeHandler = function(e) {
             if (!popup.contains(e.target) && !e.target.closest('.chat-widget__button')) {
                 popup.classList.remove('active');
-                document.removeEventListener('click', closeChat);
+                document.removeEventListener('click', closeHandler);
             }
-        });
+        };
+        document.addEventListener('click', closeHandler);
     }, 100);
 }
 
@@ -782,23 +796,115 @@ let catalog;
 document.addEventListener('DOMContentLoaded', function() {
     catalog = new CatalogManager();
     
-    // Закрытие чата
-    document.querySelector('.chat-widget__close').addEventListener('click', function() {
-        document.querySelector('.chat-widget__popup').classList.remove('active');
-    });
+    // Chat widget functionality
+    const chatButton = document.querySelector('.chat-widget__button');
+    const chatPopup = document.querySelector('.chat-widget__popup');
+    const chatClose = document.querySelector('.chat-widget__close');
+
+    if (chatButton && chatPopup) {
+        chatButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            chatPopup.classList.toggle('active');
+        });
+
+        if (chatClose) {
+            chatClose.addEventListener('click', () => {
+                chatPopup.classList.remove('active');
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (chatPopup.classList.contains('active') && 
+                !chatPopup.contains(e.target) && 
+                !chatButton.contains(e.target)) {
+                chatPopup.classList.remove('active');
+            }
+        });
+    }
     
-    // Отправка формы чата
-    document.querySelector('.chat-widget__form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Здесь можно добавить AJAX отправку
-        const formData = new FormData(this);
-        const productName = this.querySelector('input[placeholder="Какие товары"]').value || 'товар';
-        
-        alert(`Заказ на ${productName} отправлен! Мы свяжемся с вами в ближайшее время.`);
-        this.reset();
-        document.querySelector('.chat-widget__popup').classList.remove('active');
-    });
+    // Отправка формы чата через EmailJS
+    const chatForm = document.querySelector('.chat-widget__form');
+    if (chatForm) {
+        chatForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitButton = this.querySelector('button[type="submit"]');
+            const messageDiv = document.getElementById('form-message');
+            // Показываем индикатор загрузки
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = 'Отправка...';
+            if (messageDiv) {
+                messageDiv.textContent = '';
+                messageDiv.className = 'form-message';
+            }
+            
+            try {
+                const formData = {
+                    name: this.querySelector('input[name="name"]').value.trim(),
+                    email: this.querySelector('input[name="email"]').value.trim(),
+                    products: this.querySelector('input[name="products"]').value.trim(),
+                    message: this.querySelector('textarea[name="message"]')?.value.trim() || 'Не указано',
+                    date: new Date().toLocaleString('ru-RU')
+                };
+
+                // Валидация
+                if (!formData.name || !formData.email || !formData.products) {
+                    throw new Error('Пожалуйста, заполните все обязательные поля');
+                }
+
+                // Проверка email
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(formData.email)) {
+                    throw new Error('Пожалуйста, введите корректный email');
+                }
+
+                // EmailJS отправка
+                const response = await emailjs.send(
+                    'service_0su0smw',
+                    'template_hqq0w8l',
+                    {
+                        to_email: 'ert34vh@gmail.com',
+                        from_name: formData.name,
+                        from_email: formData.email,
+                        products: formData.products,
+                        message: formData.message,
+                        date: formData.date
+                    }
+                );
+
+                if (response.status === 200) {
+                    if (messageDiv) {
+                        messageDiv.textContent = '✅ Заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.';
+                        messageDiv.className = 'form-message form-message--success';
+                    }
+                    this.reset();
+                } else {
+                    throw new Error('Ошибка отправки через сервис');
+                }
+            } catch (error) {
+                console.error('EmailJS Error:', error);
+                
+                let errorMessage = 'Ошибка отправки заявки. ';
+                
+                if (error.message.includes('Network Error')) {
+                    errorMessage += 'Проблемы с интернет-соединением. ';
+                } else if (error.message) {
+                    errorMessage += error.message + '. ';
+                }
+                
+                errorMessage += 'Пожалуйста, позвоните нам: +7 (495) 943-68-18';
+                
+                if (messageDiv) {
+                    messageDiv.textContent = errorMessage;
+                    messageDiv.className = 'form-message form-message--error';
+                }
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+            }
+        });
+    }
 
     // Предотвращаем закрытие попапа при клике на контент
     document.querySelector('.product-popup__content').addEventListener('click', (e) => {

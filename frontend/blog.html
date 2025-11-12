@@ -8,6 +8,14 @@
     <link rel="stylesheet" href="css/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Yanone+Kaffeesatz:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- EmailJS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        // Инициализация EmailJS
+        (function() {
+            emailjs.init("ggMEErezyaXf57w61");
+        })();
+    </script>
     <style>
         /* Дополнительные стили для блога */
         .blog__grid {
@@ -506,11 +514,13 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form class="chat-widget__form">
-                <input type="email" placeholder="Email" required>
-                <input type="text" placeholder="Имя" required>
-                <input type="text" placeholder="Какие товары" required>
-                <button type="submit" class="btn btn--primary">Оформить</button>
+            <form class="chat-widget__form" id="order-form">
+                <input type="text" name="name" placeholder="Ваше имя *" required>
+                <input type="email" name="email" placeholder="Ваш email *" required>
+                <input type="text" name="products" placeholder="Какие товары интересуют? *" required>
+                <textarea name="message" placeholder="Дополнительная информация" rows="3"></textarea>
+                <button type="submit" class="btn btn--primary">Отправить заявку</button>
+                <div class="form-message" id="form-message" role="status" aria-live="polite"></div>
             </form>
         </div>
     </div>
@@ -683,16 +693,88 @@
                 });
             }
             
+            // Отправка формы чата через EmailJS
             const chatForm = document.querySelector('.chat-widget__form');
             if (chatForm) {
-                chatForm.addEventListener('submit', function(e) {
+                chatForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
-                    const productInput = this.querySelector('input[placeholder="Какие товары"]');
-                    const productName = productInput ? productInput.value : 'товар';
                     
-                    alert(`Заказ на ${productName} отправлен! Мы свяжемся с вами в ближайшее время.`);
-                    this.reset();
-                    document.querySelector('.chat-widget__popup').classList.remove('active');
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    const messageDiv = document.getElementById('form-message');
+                    
+                    // Показываем индикатор загрузки
+                    const originalText = submitButton.textContent;
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Отправка...';
+                    if (messageDiv) {
+                        messageDiv.textContent = '';
+                        messageDiv.className = 'form-message';
+                    }
+                    
+                    try {
+                        const formData = {
+                            name: this.querySelector('input[name="name"]').value.trim(),
+                            email: this.querySelector('input[name="email"]').value.trim(),
+                            products: this.querySelector('input[name="products"]').value.trim(),
+                            message: this.querySelector('textarea[name="message"]')?.value.trim() || 'Не указано',
+                            date: new Date().toLocaleString('ru-RU')
+                        };
+
+                        // Валидация
+                        if (!formData.name || !formData.email || !formData.products) {
+                            throw new Error('Пожалуйста, заполните все обязательные поля');
+                        }
+
+                        // Проверка email
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(formData.email)) {
+                            throw new Error('Пожалуйста, введите корректный email');
+                        }
+
+                        // EmailJS отправка
+                        const response = await emailjs.send(
+                            'service_0su0smw',
+                            'template_hqq0w8l',
+                            {
+                                to_email: 'perometer@inbox.ru',
+                                from_name: formData.name,
+                                from_email: formData.email,
+                                products: formData.products,
+                                message: formData.message,
+                                date: formData.date
+                            }
+                        );
+
+                        if (response.status === 200) {
+                            if (messageDiv) {
+                                messageDiv.textContent = '✅ Заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.';
+                                messageDiv.className = 'form-message form-message--success';
+                            }
+                            this.reset();
+                        } else {
+                            throw new Error('Ошибка отправки через сервис');
+                        }
+                    } catch (error) {
+                        console.error('EmailJS Error:', error);
+                        
+                        let errorMessage = 'Ошибка отправки заявки. ';
+                        
+                        if (error.message.includes('Network Error')) {
+                            errorMessage += 'Проблемы с интернет-соединением. ';
+                        } else if (error.message) {
+                            errorMessage += error.message + '. ';
+                        }
+                        
+                        errorMessage += 'Пожалуйста, позвоните нам: +7 (495) 943-68-18';
+                        
+                        if (messageDiv) {
+                            messageDiv.textContent = errorMessage;
+                            messageDiv.className = 'form-message form-message--error';
+                        }
+                    } finally {
+                        submitButton.disabled = false;
+                        submitButton.textContent = originalText;
+                    }
                 });
             }
         });

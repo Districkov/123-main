@@ -8,6 +8,14 @@
     <link rel="stylesheet" href="css/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Yanone+Kaffeesatz:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- EmailJS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        // Инициализация EmailJS
+        (function() {
+            emailjs.init("ggMEErezyaXf57w61");
+        })();
+    </script>
 </head>
 <body>
     <!-- Header -->
@@ -426,11 +434,13 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form class="chat-widget__form">
-                <input type="email" placeholder="Email" required>
-                <input type="text" placeholder="Имя" required>
-                <input type="text" placeholder="Какие товары" required>
-                <button type="submit" class="btn btn--primary">Оформить</button>
+            <form class="chat-widget__form" id="order-form">
+                <input type="text" name="name" placeholder="Ваше имя *" required>
+                <input type="email" name="email" placeholder="Ваш email *" required>
+                <input type="text" name="products" placeholder="Какие товары интересуют? *" required>
+                <textarea name="message" placeholder="Дополнительная информация" rows="3"></textarea>
+                <button type="submit" class="btn btn--primary">Отправить заявку</button>
+                <div class="form-message" id="form-message" role="status" aria-live="polite"></div>
             </form>
         </div>
     </div>

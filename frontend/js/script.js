@@ -258,13 +258,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (response.status === 200) {
                     messageDiv.textContent = '✅ Заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.';
-                    messageDiv.className = 'form-message success';
+                    messageDiv.className = 'form-message form-message--success';
                     this.reset();
-                    
-                    // Автоматически закрываем попап через 3 секунды
-                    setTimeout(() => {
-                        if (chatPopup) chatPopup.classList.remove('active');
-                    }, 3000);
                 } else {
                     throw new Error('Ошибка отправки через сервис');
                 }
@@ -282,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 errorMessage += 'Пожалуйста, позвоните нам: +7 (495) 943-68-18';
                 
                 messageDiv.textContent = errorMessage;
-                messageDiv.className = 'form-message error';
+                messageDiv.className = 'form-message form-message--error';
             } finally {
                 submitButton.disabled = false;
                 submitButton.textContent = originalText;

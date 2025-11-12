@@ -14,7 +14,8 @@ router.get('/', (req, res) => {
 router.get('/:id', (req, res) => {
   try {
     const items = JSON.parse(fs.readFileSync(productsFile, 'utf8') || '[]');
-    const item = items.find(i => i.id === req.params.id);
+    const id = String(req.params.id);
+    const item = items.find(i => String(i.id) === id);
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.json(item);
   } catch(e) { res.status(500).json({ error: 'Read error' }); }

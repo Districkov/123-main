@@ -1,4 +1,4 @@
-const TOKEN = process.env.ADMIN_TOKEN || 'termokont-admin';
+const TOKEN = process.env.ADMIN_TOKEN || 'admin123';
 
 module.exports = function(req, res, next) {
   const token = req.headers['x-admin-token'] || req.query.token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);

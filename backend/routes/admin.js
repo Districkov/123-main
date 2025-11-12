@@ -2,7 +2,6 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const router = express.Router();
-const auth = require('../middleware/auth');
 
 const dataDir = path.join(__dirname, '..', 'data');
 const productsFile = path.join(dataDir, 'products.json');
@@ -16,8 +15,19 @@ function writeJson(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
 }
 
+// Тестовый эндпоинт для проверки заголовков
+router.get('/test', (req, res) => {
+  res.json({
+    message: 'Admin test endpoint - Token is valid!',
+    receivedToken: req.headers['x-admin-token'],
+    method: req.method,
+    path: req.path,
+    allHeaders: req.headers
+  });
+});
+
 // Products CRUD
-router.post('/products', auth, (req, res) => {
+router.post('/products', (req, res) => {
   const items = readJson(productsFile);
   const id = Date.now().toString();
   const item = Object.assign({}, req.body, { id });
@@ -26,18 +36,20 @@ router.post('/products', auth, (req, res) => {
   res.status(201).json(item);
 });
 
-router.put('/products/:id', auth, (req, res) => {
+router.put('/products/:id', (req, res) => {
   const items = readJson(productsFile);
-  const idx = items.findIndex(i => i.id === req.params.id);
+  const id = String(req.params.id);
+  const idx = items.findIndex(i => String(i.id) === id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  items[idx] = Object.assign({}, items[idx], req.body);
+  items[idx] = Object.assign({}, items[idx], req.body, { id: items[idx].id });
   writeJson(productsFile, items);
   res.json(items[idx]);
 });
 
-router.delete('/products/:id', auth, (req, res) => {
+router.delete('/products/:id', (req, res) => {
   let items = readJson(productsFile);
-  const idx = items.findIndex(i => i.id === req.params.id);
+  const id = String(req.params.id);
+  const idx = items.findIndex(i => String(i.id) === id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
   const removed = items.splice(idx,1)[0];
   writeJson(productsFile, items);
@@ -45,7 +57,7 @@ router.delete('/products/:id', auth, (req, res) => {
 });
 
 // Articles CRUD (similar)
-router.post('/articles', auth, (req, res) => {
+router.post('/articles', (req, res) => {
   const items = readJson(articlesFile);
   const id = Date.now().toString();
   const item = Object.assign({}, req.body, { id });
@@ -54,18 +66,21 @@ router.post('/articles', auth, (req, res) => {
   res.status(201).json(item);
 });
 
-router.put('/articles/:id', auth, (req, res) => {
+router.put('/articles/:id', (req, res) => {
   const items = readJson(articlesFile);
-  const idx = items.findIndex(i => i.id === req.params.id);
+  const id = String(req.params.id);
+  console.log('[ADMIN] PUT /articles/:id', { requestedId: id, availableIds: items.map(i => i.id) });
+  const idx = items.findIndex(i => String(i.id) === id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  items[idx] = Object.assign({}, items[idx], req.body);
+  items[idx] = Object.assign({}, items[idx], req.body, { id: items[idx].id });
   writeJson(articlesFile, items);
   res.json(items[idx]);
 });
 
-router.delete('/articles/:id', auth, (req, res) => {
+router.delete('/articles/:id', (req, res) => {
   let items = readJson(articlesFile);
-  const idx = items.findIndex(i => i.id === req.params.id);
+  const id = String(req.params.id);
+  const idx = items.findIndex(i => String(i.id) === id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
   const removed = items.splice(idx,1)[0];
   writeJson(articlesFile, items);

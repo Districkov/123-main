@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel - Termokont</title>
   <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
   <div class="container">
@@ -12,7 +13,7 @@
       <h1>Панель администратора</h1>
       <div class="auth-section">
         <label>Токен администратора: 
-          <input id="token" type="password" value="termokont-admin" class="token-input">
+          <input id="token" type="password" value="admin123" class="token-input">
         </label>
         <button id="toggle-token" class="btn-secondary">👁</button>
         <button id="logout" class="btn-danger">Выйти</button>
@@ -32,13 +33,27 @@
   <section class="section">
     <div class="section-header">
       <h2>Управление товарами</h2>
-      <button id="refresh-products" class="btn-secondary">🔄 Обновить</button>
+      <div style="display: flex; gap: 10px;">
+        <button id="add-product" class="btn-primary">➕ Добавить товар</button>
+        <button id="refresh-products" class="btn-secondary">🔄 Обновить</button>
+      </div>
     </div>
     <div id="products-list" class="items-list"></div>
-    
-    <div class="form-section">
-      <h3>Добавить / Редактировать товар</h3>
-      <form id="product-form" class="ajax-form">
+  </section>
+</div>
+
+<!-- Product Edit Popup -->
+<div class="admin-popup" id="product-popup">
+  <div class="admin-popup__overlay"></div>
+  <div class="admin-popup__content">
+    <div class="admin-popup__header">
+      <h3 id="product-popup-title">Добавить товар</h3>
+      <button class="admin-popup__close" id="close-product-popup">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="admin-popup__body">
+      <form id="product-form-popup" class="ajax-form">
         <input name="id" type="hidden">
         
         <div class="form-row">
@@ -137,11 +152,11 @@
         
         <div class="form-actions">
           <button type="submit" class="btn-primary">💾 Сохранить товар</button>
-          <button type="button" id="cancel-edit" class="btn-secondary">❌ Отмена</button>
+          <button type="button" id="cancel-edit-product-popup" class="btn-secondary">❌ Отмена</button>
         </div>
       </form>
     </div>
-  </section>
+  </div>
 </div>
 
 <!-- Articles Tab Content -->
@@ -149,13 +164,27 @@
   <section class="section">
     <div class="section-header">
       <h2>Управление статьями</h2>
-      <button id="refresh-articles" class="btn-secondary">🔄 Обновить</button>
+      <div style="display: flex; gap: 10px;">
+        <button id="add-article" class="btn-primary">➕ Добавить статью</button>
+        <button id="refresh-articles" class="btn-secondary">🔄 Обновить</button>
+      </div>
     </div>
     <div id="articles-list" class="items-list"></div>
-    
-    <div class="form-section">
-      <h3>Добавить / Редактировать статью</h3>
-      <form id="article-form" class="ajax-form">
+  </section>
+</div>
+
+<!-- Article Edit Popup -->
+<div class="admin-popup" id="article-popup">
+  <div class="admin-popup__overlay"></div>
+  <div class="admin-popup__content">
+    <div class="admin-popup__header">
+      <h3 id="article-popup-title">Добавить статью</h3>
+      <button class="admin-popup__close" id="close-article-popup">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="admin-popup__body">
+      <form id="article-form-popup" class="ajax-form">
         <input name="id" type="hidden">
         
         <div class="form-row">
@@ -202,11 +231,11 @@
         
         <div class="form-actions">
           <button type="submit" class="btn-primary">💾 Сохранить статью</button>
-          <button type="button" id="cancel-edit-article" class="btn-secondary">❌ Отмена</button>
+          <button type="button" id="cancel-edit-article-popup" class="btn-secondary">❌ Отмена</button>
         </div>
       </form>
     </div>
-  </section>
+  </div>
 </div>
 
     <!-- Statistics Tab -->
