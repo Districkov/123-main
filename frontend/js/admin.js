@@ -1,4 +1,5 @@
 const API = '/api';
+const ADMIN_TOKEN_DEFAULT = 'admin123';
 
 // DOM Elements
 const tokenInput = document.getElementById('token');
@@ -126,7 +127,7 @@ function renderProducts(products) {
                onerror="this.src='./images/no-image.jpg'">
         </div>
         <div class="item-info">
-          <strong>${p.title || p.name || 'Без названия'}</strong>
+          <strong>${p.title || 'Без названия'}</strong>
           <span class="item-sku">Артикул: ${p.sku || 'Не указан'}</span>
           <span class="item-category">Категория: ${p.category || 'Не указана'}</span>
           <span class="item-price">${p.price ? `${parseFloat(p.price).toLocaleString('ru-RU')} ₽` : 'Цена не указана'}</span>

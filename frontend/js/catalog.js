@@ -62,17 +62,12 @@ class CatalogManager {
 
     transformProductData(rawProduct) {
         // Преобразуем вашу структуру данных в формат, ожидаемый каталогом
-        const normalizedTitle = (rawProduct.title && rawProduct.title.toString().trim())
-            || (rawProduct.name && rawProduct.name.toString().trim())
-            || (rawProduct.sku && rawProduct.sku.toString().trim())
-            || '';
-
         return {
             id: rawProduct.id || '',
             sku: rawProduct.sku || '',
             category: rawProduct.category || '',
-            title: normalizedTitle,
-            description: rawProduct.description || rawProduct.excerpt || '',
+            title: rawProduct.title || '',
+            description: rawProduct.description || '',
             image: rawProduct.photo || '', // photo -> image
             price: rawProduct.price || 0,
             characteristics: {
@@ -441,27 +436,23 @@ class CatalogManager {
 
         grid.innerHTML = paginatedProducts.map(product => {
             const characteristics = product.characteristics || {};
-            const hasImage = Boolean(product.image && String(product.image).trim());
             
             return `
             <div class="product-card" data-id="${product.id}">
                 <div class="product-card__image">
-                    ${hasImage ? 
-                        `<img src="${product.image}" alt="${product.title}" onerror="this.remove(); const fallback=this.parentElement.querySelector('.product-card__no-image'); if(fallback) fallback.style.display='flex'; const overlay=this.parentElement.querySelector('.product-card__overlay'); if(overlay) overlay.innerHTML='<span class=&quot;product-card__no-image-label&quot;>Нет картинки</span>';">` : 
+                    ${product.image ? 
+                        `<img src="${product.image}" alt="${product.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
                         ''
                     }
-                    <div class="product-card__no-image" style="${hasImage ? 'display: none;' : ''}">
+                    <div class="product-card__no-image" style="${product.image ? 'display: none;' : ''}">
                         <i class="fas fa-camera"></i>
-                        <span>Нет картинки</span>
+                        <span>Изображение отсутствует</span>
                     </div>
-                    <div class="product-card__overlay ${hasImage ? '' : 'product-card__overlay--no-image'}">
-                        ${hasImage ? `
+                    <div class="product-card__overlay">
                         <button class="btn btn--primary product-card__detail-btn" onclick="catalog.openProductPopup('${product.id}')">
                             <i class="fas fa-eye"></i>
                             Подробнее
-                        </button>` : `
-                        <span class="product-card__no-image-label">Нет картинки</span>
-                        `}
+                        </button>
                     </div>
                 </div>
                 <div class="product-card__content">
@@ -830,6 +821,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const submitButton = this.querySelector('button[type="submit"]');
             const messageDiv = document.getElementById('form-message');
+            const chatPopup = document.querySelector('.chat-widget__popup');
+            
             // Показываем индикатор загрузки
             const originalText = submitButton.textContent;
             submitButton.disabled = true;
@@ -864,7 +857,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'service_0su0smw',
                     'template_hqq0w8l',
                     {
-                        to_email: 'ert34vh@gmail.com',
+                        to_email: 'perometer@inbox.ru',
                         from_name: formData.name,
                         from_email: formData.email,
                         products: formData.products,
@@ -876,9 +869,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (response.status === 200) {
                     if (messageDiv) {
                         messageDiv.textContent = '✅ Заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.';
-                        messageDiv.className = 'form-message form-message--success';
+                        messageDiv.className = 'form-message success';
                     }
                     this.reset();
+                    
+                    // Автоматически закрываем попап через 3 секунды
+                    setTimeout(() => {
+                        if (chatPopup) chatPopup.classList.remove('active');
+                    }, 3000);
                 } else {
                     throw new Error('Ошибка отправки через сервис');
                 }
@@ -897,7 +895,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (messageDiv) {
                     messageDiv.textContent = errorMessage;
-                    messageDiv.className = 'form-message form-message--error';
+                    messageDiv.className = 'form-message error';
                 }
             } finally {
                 submitButton.disabled = false;
