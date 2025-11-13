@@ -44,11 +44,54 @@ body {
   flex-wrap: wrap;
 }
 
+/* Login Form Styles */
+.login-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.login-form .token-input {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 5px;
+  width: 200px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.login-form .token-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.login-form .token-input:focus {
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .token-input {
   padding: 8px 12px;
   border: none;
   border-radius: 5px;
   width: 200px;
+}
+
+/* Auth states */
+body.unauthorized .tabs,
+body.unauthorized .tab-content,
+body.unauthorized .section {
+  display: none;
+}
+
+body.unauthorized #auth-message {
+  display: block !important;
 }
 
 .status-message {
@@ -360,6 +403,22 @@ button {
     justify-content: center;
   }
   
+  .login-form {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  
+  .login-form .token-input {
+    width: 100%;
+  }
+  
+  .admin-panel {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  
   .token-input {
     width: 100%;
   }
@@ -544,6 +603,7 @@ button {
     padding: 20px;
   }
 }
+
 /* Добавить в существующий CSS */
 
 .form-row {
@@ -605,5 +665,64 @@ button {
   .form-row {
     flex-direction: column;
     gap: 0;
+  }
+}
+/* Добавляем в конец файла admin.css */
+
+/* Стили для формы смены пароля на странице */
+#change-password-section {
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#change-password-section .section-header {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+#change-password-section h2 {
+  color: #495057;
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+#change-password-form .form-group {
+  margin-bottom: 15px;
+}
+
+#change-password-form .form-actions {
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 1px solid #dee2e6;
+}
+
+/* Адаптивность для формы смены пароля */
+@media (max-width: 768px) {
+  #change-password-section {
+    margin: 15px 20px !important;
+  }
+  
+  #change-password-section .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  #change-password-section h2 {
+    font-size: 1.1rem;
   }
 }

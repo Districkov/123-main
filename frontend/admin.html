@@ -7,18 +7,33 @@
   <link rel="stylesheet" href="css/admin.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body>
+<body class="unauthorized">
   <div class="container">
     <header class="header">
       <h1>Панель администратора</h1>
       <div class="auth-section">
-        <label>Токен администратора: 
-          <input id="token" type="password" value="admin123" class="token-input">
-        </label>
-        <button id="toggle-token" class="btn-secondary">👁</button>
-        <button id="logout" class="btn-danger">Выйти</button>
+        <div id="login-form" class="login-form">
+          <label>Пароль администратора:
+            <input id="password" type="password" placeholder="Введите пароль" class="token-input" autocomplete="current-password">
+          </label>
+          <button id="login-btn" class="btn-primary">Войти</button>
+        </div>
+        <div id="admin-panel" class="admin-panel" style="display: none;">
+          <label>Токен администратора: 
+            <input id="token" type="password" placeholder="Введите токен" class="token-input">
+          </label>
+          <button id="toggle-token" class="btn-secondary">👁</button>
+          <!-- УБИРАЕМ кнопку смены пароля -->
+          <button id="logout" class="btn-danger">Выйти</button>
+        </div>
       </div>
     </header>
+
+    <!-- УБИРАЕМ форму смены пароля -->
+
+    <div class="status-message info" id="auth-message">
+      Для доступа к панели управления требуется авторизация
+    </div>
 
     <div class="status-message" id="status-message"></div>
 
@@ -29,214 +44,214 @@
     </div>
 
     <!-- Products Tab Content -->
-<div id="products-tab" class="tab-content active">
-  <section class="section">
-    <div class="section-header">
-      <h2>Управление товарами</h2>
-      <div style="display: flex; gap: 10px;">
-        <button id="add-product" class="btn-primary">➕ Добавить товар</button>
-        <button id="refresh-products" class="btn-secondary">🔄 Обновить</button>
+    <div id="products-tab" class="tab-content active">
+      <section class="section">
+        <div class="section-header">
+          <h2>Управление товарами</h2>
+          <div style="display: flex; gap: 10px;">
+            <button id="add-product" class="btn-primary">➕ Добавить товар</button>
+            <button id="refresh-products" class="btn-secondary">🔄 Обновить</button>
+          </div>
+        </div>
+        <div id="products-list" class="items-list"></div>
+      </section>
+    </div>
+
+    <!-- Product Edit Popup -->
+    <div class="admin-popup" id="product-popup">
+      <div class="admin-popup__overlay"></div>
+      <div class="admin-popup__content">
+        <div class="admin-popup__header">
+          <h3 id="product-popup-title">Добавить товар</h3>
+          <button class="admin-popup__close" id="close-product-popup">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="admin-popup__body">
+          <form id="product-form-popup" class="ajax-form">
+            <input name="id" type="hidden">
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Артикул (SKU):</label>
+                <input name="sku" placeholder="ТА2П" required>
+              </div>
+              <div class="form-group">
+                <label>Категория:</label>
+                <input name="category" placeholder="Термоконт-ТА2 переносной" required>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Название товара:</label>
+              <input name="title" placeholder="Термоконт-ТА2П" required>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Цена (руб):</label>
+                <input name="price" type="number" placeholder="208000.00" step="0.01" required>
+              </div>
+              <div class="form-group">
+                <label>Количество:</label>
+                <input name="quantity" type="number" value="1" min="1">
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>URL изображения:</label>
+              <input name="photo" placeholder="https://static.tildacdn.com/.../image.png">
+            </div>
+            
+            <div class="form-section-inner">
+              <h4>Характеристики</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Показатель визирования:</label>
+                  <input name="characteristics_visibility" placeholder="40:1">
+                </div>
+                <div class="form-group">
+                  <label>Диапазон температур:</label>
+                  <input name="characteristics_temperature_range" placeholder="200-1200°С">
+                </div>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Погрешность:</label>
+                  <input name="characteristics_accuracy" placeholder="0.01">
+                </div>
+                <div class="form-group">
+                  <label>Спектральный диапазон:</label>
+                  <input name="characteristics_spectral_range" placeholder="0,9-4,5 мкм">
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label>Принцип действия:</label>
+                <input name="characteristics_principle" placeholder="Энергетический (яркостной)">
+              </div>
+              
+              <div class="form-group">
+                <label>Измеряемые материалы:</label>
+                <input name="characteristics_materials" placeholder="Al и его сплавы">
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Температура мин:</label>
+                  <input name="characteristics_temperature_min" placeholder="200">
+                </div>
+                <div class="form-group">
+                  <label>Температура макс:</label>
+                  <input name="characteristics_temperature_max" placeholder="1200">
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-section-inner">
+              <h4>SEO настройки</h4>
+              <div class="form-group">
+                <label>SEO заголовок:</label>
+                <input name="seo_title" placeholder="Термоконт-ТА2П — Термоконт-ТА2 переносной">
+              </div>
+              <div class="form-group">
+                <label>SEO описание:</label>
+                <textarea name="seo_description" placeholder="Пирометры Термоконт" rows="2"></textarea>
+              </div>
+              <div class="form-group">
+                <label>SEO ключевые слова:</label>
+                <textarea name="seo_keywords" placeholder="Ключевые слова через запятую" rows="2"></textarea>
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">💾 Сохранить товар</button>
+              <button type="button" id="cancel-edit-product-popup" class="btn-secondary">❌ Отмена</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
-    <div id="products-list" class="items-list"></div>
-  </section>
-</div>
 
-<!-- Product Edit Popup -->
-<div class="admin-popup" id="product-popup">
-  <div class="admin-popup__overlay"></div>
-  <div class="admin-popup__content">
-    <div class="admin-popup__header">
-      <h3 id="product-popup-title">Добавить товар</h3>
-      <button class="admin-popup__close" id="close-product-popup">
-        <i class="fas fa-times"></i>
-      </button>
+    <!-- Articles Tab Content -->
+    <div id="articles-tab" class="tab-content">
+      <section class="section">
+        <div class="section-header">
+          <h2>Управление статьями</h2>
+          <div style="display: flex; gap: 10px;">
+            <button id="add-article" class="btn-primary">➕ Добавить статью</button>
+            <button id="refresh-articles" class="btn-secondary">🔄 Обновить</button>
+          </div>
+        </div>
+        <div id="articles-list" class="items-list"></div>
+      </section>
     </div>
-    <div class="admin-popup__body">
-      <form id="product-form-popup" class="ajax-form">
-        <input name="id" type="hidden">
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Артикул (SKU):</label>
-            <input name="sku" placeholder="ТА2П" required>
-          </div>
-          <div class="form-group">
-            <label>Категория:</label>
-            <input name="category" placeholder="Термоконт-ТА2 переносной" required>
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label>Название товара:</label>
-          <input name="title" placeholder="Термоконт-ТА2П" required>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Цена (руб):</label>
-            <input name="price" type="number" placeholder="208000.00" step="0.01" required>
-          </div>
-          <div class="form-group">
-            <label>Количество:</label>
-            <input name="quantity" type="number" value="1" min="1">
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label>URL изображения:</label>
-          <input name="photo" placeholder="https://static.tildacdn.com/.../image.png">
-        </div>
-        
-        <div class="form-section-inner">
-          <h4>Характеристики</h4>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Показатель визирования:</label>
-              <input name="characteristics_visibility" placeholder="40:1">
-            </div>
-            <div class="form-group">
-              <label>Диапазон температур:</label>
-              <input name="characteristics_temperature_range" placeholder="200-1200°С">
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label>Погрешность:</label>
-              <input name="characteristics_accuracy" placeholder="0.01">
-            </div>
-            <div class="form-group">
-              <label>Спектральный диапазон:</label>
-              <input name="characteristics_spectral_range" placeholder="0,9-4,5 мкм">
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label>Принцип действия:</label>
-            <input name="characteristics_principle" placeholder="Энергетический (яркостной)">
-          </div>
-          
-          <div class="form-group">
-            <label>Измеряемые материалы:</label>
-            <input name="characteristics_materials" placeholder="Al и его сплавы">
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label>Температура мин:</label>
-              <input name="characteristics_temperature_min" placeholder="200">
-            </div>
-            <div class="form-group">
-              <label>Температура макс:</label>
-              <input name="characteristics_temperature_max" placeholder="1200">
-            </div>
-          </div>
-        </div>
-        
-        <div class="form-section-inner">
-          <h4>SEO настройки</h4>
-          <div class="form-group">
-            <label>SEO заголовок:</label>
-            <input name="seo_title" placeholder="Термоконт-ТА2П — Термоконт-ТА2 переносной">
-          </div>
-          <div class="form-group">
-            <label>SEO описание:</label>
-            <textarea name="seo_description" placeholder="Пирометры Термоконт" rows="2"></textarea>
-          </div>
-          <div class="form-group">
-            <label>SEO ключевые слова:</label>
-            <textarea name="seo_keywords" placeholder="Ключевые слова через запятую" rows="2"></textarea>
-          </div>
-        </div>
-        
-        <div class="form-actions">
-          <button type="submit" class="btn-primary">💾 Сохранить товар</button>
-          <button type="button" id="cancel-edit-product-popup" class="btn-secondary">❌ Отмена</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
 
-<!-- Articles Tab Content -->
-<div id="articles-tab" class="tab-content">
-  <section class="section">
-    <div class="section-header">
-      <h2>Управление статьями</h2>
-      <div style="display: flex; gap: 10px;">
-        <button id="add-article" class="btn-primary">➕ Добавить статью</button>
-        <button id="refresh-articles" class="btn-secondary">🔄 Обновить</button>
+    <!-- Article Edit Popup -->
+    <div class="admin-popup" id="article-popup">
+      <div class="admin-popup__overlay"></div>
+      <div class="admin-popup__content">
+        <div class="admin-popup__header">
+          <h3 id="article-popup-title">Добавить статью</h3>
+          <button class="admin-popup__close" id="close-article-popup">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="admin-popup__body">
+          <form id="article-form-popup" class="ajax-form">
+            <input name="id" type="hidden">
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Категория:</label>
+                <input name="category" placeholder="Советы" required>
+              </div>
+              <div class="form-group">
+                <label>Дата публикации:</label>
+                <input name="date" placeholder="20 декабря 2024">
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Заголовок статьи:</label>
+              <input name="title" placeholder="Как правильно выбрать пирометр для производства" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Краткое описание:</label>
+              <textarea name="excerpt" placeholder="Выбор подходящего пирометра зависит от множества факторов..." rows="3" required></textarea>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Время чтения:</label>
+                <input name="readTime" placeholder="6 мин чтения">
+              </div>
+              <div class="form-group">
+                <label>Просмотры:</label>
+                <input name="views" placeholder="2.1K просмотров">
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>URL изображения:</label>
+              <input name="image" placeholder="images/product3.jpg">
+            </div>
+            
+            <div class="form-group">
+              <label>Содержание статьи:</label>
+              <textarea name="content" placeholder="Текст статьи..." rows="6" required></textarea>
+            </div>
+            
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">💾 Сохранить статью</button>
+              <button type="button" id="cancel-edit-article-popup" class="btn-secondary">❌ Отмена</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
-    <div id="articles-list" class="items-list"></div>
-  </section>
-</div>
-
-<!-- Article Edit Popup -->
-<div class="admin-popup" id="article-popup">
-  <div class="admin-popup__overlay"></div>
-  <div class="admin-popup__content">
-    <div class="admin-popup__header">
-      <h3 id="article-popup-title">Добавить статью</h3>
-      <button class="admin-popup__close" id="close-article-popup">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="admin-popup__body">
-      <form id="article-form-popup" class="ajax-form">
-        <input name="id" type="hidden">
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Категория:</label>
-            <input name="category" placeholder="Советы" required>
-          </div>
-          <div class="form-group">
-            <label>Дата публикации:</label>
-            <input name="date" placeholder="20 декабря 2024">
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label>Заголовок статьи:</label>
-          <input name="title" placeholder="Как правильно выбрать пирометр для производства" required>
-        </div>
-        
-        <div class="form-group">
-          <label>Краткое описание:</label>
-          <textarea name="excerpt" placeholder="Выбор подходящего пирометра зависит от множества факторов..." rows="3" required></textarea>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Время чтения:</label>
-            <input name="readTime" placeholder="6 мин чтения">
-          </div>
-          <div class="form-group">
-            <label>Просмотры:</label>
-            <input name="views" placeholder="2.1K просмотров">
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label>URL изображения:</label>
-          <input name="image" placeholder="images/product3.jpg">
-        </div>
-        
-        <div class="form-group">
-          <label>Содержание статьи:</label>
-          <textarea name="content" placeholder="Текст статьи..." rows="6" required></textarea>
-        </div>
-        
-        <div class="form-actions">
-          <button type="submit" class="btn-primary">💾 Сохранить статью</button>
-          <button type="button" id="cancel-edit-article-popup" class="btn-secondary">❌ Отмена</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
 
     <!-- Statistics Tab -->
     <div id="stats-tab" class="tab-content">

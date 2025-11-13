@@ -1,11 +1,20 @@
 const API = '/api';
-const ADMIN_TOKEN_DEFAULT = 'admin123';
+
+// Auth state
+let isAuthenticated = false;
 
 // DOM Elements
 const tokenInput = document.getElementById('token');
 const toggleTokenBtn = document.getElementById('toggle-token');
 const logoutBtn = document.getElementById('logout');
 const statusMessage = document.getElementById('status-message');
+const authMessage = document.getElementById('auth-message');
+
+// Auth DOM Elements
+const loginForm = document.getElementById('login-form');
+const adminPanel = document.getElementById('admin-panel');
+const passwordInput = document.getElementById('password');
+const loginBtn = document.getElementById('login-btn');
 
 // Tab functionality
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -29,60 +38,158 @@ function showMessage(message, type = 'success') {
 }
 
 function authHeaders() {
-  // Получаем токен из input поля
+  if (!isAuthenticated) {
+    throw new Error('Не авторизован');
+  }
+  
   const tokenElement = document.getElementById('token');
-  let token = ADMIN_TOKEN_DEFAULT;
+  let token = '';
   
   if (tokenElement) {
     token = tokenElement.value.trim();
   }
   
-  // Если токен пустой, используем дефолтный
   if (!token) {
-    token = ADMIN_TOKEN_DEFAULT;
+    throw new Error('Токен администратора не указан');
   }
   
-  const headers = { 
+  return { 
     'Content-Type': 'application/json', 
     'x-admin-token': token
   };
-  
-  // Отладка
-  console.log('Auth headers:', headers);
-  
-  return headers;
 }
 
 async function handleApiCall(apiCall, successMessage) {
   try {
+    if (!isAuthenticated) {
+      throw new Error('Требуется авторизация');
+    }
+    
     const response = await apiCall();
     
-    // Логируем ответ для отладки
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        url: response.url,
-        error: errorText
-      });
-      
-      try {
-        const errorJson = JSON.parse(errorText);
-        throw new Error(errorJson.error || `HTTP error! status: ${response.status}`);
-      } catch (e) {
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
+      throw new Error(errorText || `HTTP error! status: ${response.status}`);
     }
     
     showMessage(successMessage, 'success');
     return await response.json();
   } catch (error) {
     console.error('API Call Error:', error);
-    showMessage(`Ошибка: ${error.message}`, 'error');
+    
+    if (error.message.includes('Не авторизован') || error.message.includes('Требуется авторизация')) {
+      logout();
+      showMessage('Сессия истекла. Требуется повторный вход.', 'error');
+    } else {
+      showMessage(`Ошибка: ${error.message}`, 'error');
+    }
+    
     throw error;
   }
 }
+
+// Authentication functions
+function checkAuth() {
+  const savedAuth = localStorage.getItem('admin-authenticated');
+  const authTime = localStorage.getItem('admin-auth-time');
+  const now = Date.now();
+  
+  if (savedAuth === 'true' && authTime && (now - parseInt(authTime)) < 24 * 60 * 60 * 1000) {
+    loginSuccess();
+  } else {
+    logout();
+  }
+}
+
+function loginSuccess() {
+  isAuthenticated = true;
+  loginForm.style.display = 'none';
+  adminPanel.style.display = 'flex';
+  document.body.classList.remove('unauthorized');
+  authMessage.style.display = 'none';
+  
+  const authTime = Date.now();
+  localStorage.setItem('admin-authenticated', 'true');
+  localStorage.setItem('admin-auth-time', authTime.toString());
+  
+  loadProducts();
+  loadArticles();
+}
+
+function logout() {
+  isAuthenticated = false;
+  loginForm.style.display = 'flex';
+  adminPanel.style.display = 'none';
+  document.body.classList.add('unauthorized');
+  authMessage.style.display = 'block';
+  
+  localStorage.removeItem('admin-authenticated');
+  localStorage.removeItem('admin-auth-time');
+  
+  passwordInput.value = '';
+  document.getElementById('products-list').innerHTML = '';
+  document.getElementById('articles-list').innerHTML = '';
+  updateStats();
+}
+
+async function attemptLogin() {
+  const password = passwordInput.value.trim();
+  
+  if (!password) {
+    showMessage('Введите пароль', 'error');
+    return;
+  }
+  
+  loginBtn.disabled = true;
+  
+  try {
+    loginBtn.innerHTML = '⏳ Проверка...';
+    
+    console.log('Sending password verification request...');
+    
+    const response = await fetch('/admin/verify-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ password: password })
+    });
+    
+    console.log('Response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('Server response:', result);
+    
+    if (result.success) {
+      loginSuccess();
+      showMessage('Успешный вход в систему', 'success');
+    } else {
+      showMessage(result.error || 'Неверный пароль', 'error');
+      passwordInput.value = '';
+      passwordInput.focus();
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    showMessage('Ошибка при входе: ' + error.message, 'error');
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.innerHTML = 'Войти';
+  }
+}
+
+// Login functionality
+loginBtn.addEventListener('click', attemptLogin);
+
+// Enter key for login
+passwordInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    attemptLogin();
+  }
+});
 
 // Token visibility toggle
 toggleTokenBtn.addEventListener('click', () => {
@@ -93,7 +200,7 @@ toggleTokenBtn.addEventListener('click', () => {
 
 // Logout functionality
 logoutBtn.addEventListener('click', () => {
-  tokenInput.value = '';
+  logout();
   showMessage('Вы вышли из системы', 'info');
 });
 
@@ -147,21 +254,15 @@ async function deleteProduct(id) {
   
   try {
     const headers = authHeaders();
-    console.log('Making DELETE request to /admin/products/' + id);
-    console.log('Request headers:', headers);
-    
     await handleApiCall(
-      () => fetch('/admin/products/' + id, { 
+      () => fetch('/auth/products/' + id, { 
         method: 'DELETE', 
-        headers: headers,
-        credentials: 'include'
+        headers: headers
       }),
       'Товар удален'
     );
     loadProducts();
-  } catch (error) {
-    // Error handled in handleApiCall
-  }
+  } catch (error) {}
 }
 
 function openProductPopup(product = null) {
@@ -170,7 +271,6 @@ function openProductPopup(product = null) {
   const title = document.getElementById('product-popup-title');
   
   if (product) {
-    // Редактирование
     title.textContent = 'Редактировать товар';
     form.id.value = product.id;
     form.sku.value = product.sku || '';
@@ -180,7 +280,6 @@ function openProductPopup(product = null) {
     form.price.value = product.price || '';
     form.quantity.value = product.quantity || 1;
     
-    // Characteristics
     form.characteristics_visibility.value = product.characteristics?.['Показатель визирования'] || '';
     form.characteristics_temperature_range.value = product.characteristics?.['Диапазон измерений температуры'] || '';
     form.characteristics_accuracy.value = product.characteristics?.['Погрешность'] || '';
@@ -190,12 +289,10 @@ function openProductPopup(product = null) {
     form.characteristics_temperature_min.value = product.characteristics?.['Температура мин'] || '';
     form.characteristics_temperature_max.value = product.characteristics?.['Температура макс'] || '';
     
-    // SEO
     form.seo_title.value = product.seo?.title || '';
     form.seo_description.value = product.seo?.description || '';
     form.seo_keywords.value = product.seo?.keywords || '';
   } else {
-    // Добавление
     title.textContent = 'Добавить товар';
     form.reset();
     form.id.value = '';
@@ -220,9 +317,7 @@ async function editProduct(id) {
       'Товар загружен для редактирования'
     );
     openProductPopup(product);
-  } catch (error) {
-    // Error handled in handleApiCall
-  }
+  } catch (error) {}
 }
 
 // Articles functionality
@@ -275,21 +370,15 @@ async function deleteArticle(id) {
   
   try {
     const headers = authHeaders();
-    console.log('Making DELETE request to /admin/articles/' + id);
-    console.log('Request headers:', headers);
-    
     await handleApiCall(
-      () => fetch('/admin/articles/' + id, { 
+      () => fetch('/auth/articles/' + id, { 
         method: 'DELETE', 
-        headers: headers,
-        credentials: 'include'
+        headers: headers
       }),
       'Статья удалена'
     );
     loadArticles();
-  } catch (error) {
-    // Error handled in handleApiCall
-  }
+  } catch (error) {}
 }
 
 function openArticlePopup(article = null) {
@@ -298,7 +387,6 @@ function openArticlePopup(article = null) {
   const title = document.getElementById('article-popup-title');
   
   if (article) {
-    // Редактирование
     title.textContent = 'Редактировать статью';
     form.id.value = article.id;
     form.category.value = article.category || '';
@@ -309,7 +397,6 @@ function openArticlePopup(article = null) {
     form.readTime.value = article.readTime || '';
     form.views.value = article.views || '';
     
-    // Content - simplified for form
     if (article.content && article.content.length > 0) {
       const firstParagraph = article.content.find(item => item.type === 'paragraph');
       form.content.value = firstParagraph ? firstParagraph.text : '';
@@ -317,7 +404,6 @@ function openArticlePopup(article = null) {
       form.content.value = '';
     }
   } else {
-    // Добавление
     title.textContent = 'Добавить статью';
     form.reset();
     form.id.value = '';
@@ -342,12 +428,10 @@ async function editArticle(id) {
       'Статья загружена для редактирования'
     );
     openArticlePopup(article);
-  } catch (error) {
-    // Error handled in handleApiCall
-  }
+  } catch (error) {}
 }
 
-// Popup event handlers - initialize after DOM is loaded
+// Popup event handlers
 function initPopupHandlers() {
   const addProductBtn = document.getElementById('add-product');
   const addArticleBtn = document.getElementById('add-article');
@@ -362,12 +446,20 @@ function initPopupHandlers() {
 
   if (addProductBtn) {
     addProductBtn.addEventListener('click', () => {
+      if (!isAuthenticated) {
+        showMessage('Требуется авторизация', 'error');
+        return;
+      }
       openProductPopup();
     });
   }
 
   if (addArticleBtn) {
     addArticleBtn.addEventListener('click', () => {
+      if (!isAuthenticated) {
+        showMessage('Требуется авторизация', 'error');
+        return;
+      }
       openArticlePopup();
     });
   }
@@ -396,7 +488,6 @@ function initPopupHandlers() {
     cancelArticlePopupBtn.addEventListener('click', closeArticlePopup);
   }
 
-  // Close popups on ESC key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       const productPopup = document.getElementById('product-popup');
@@ -410,12 +501,16 @@ function initPopupHandlers() {
     }
   });
 
-  // Form handlers
   if (productFormPopup) {
     productFormPopup.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const form = e.target;
       
+      if (!isAuthenticated) {
+        showMessage('Требуется авторизация', 'error');
+        return;
+      }
+      
+      const form = e.target;
       const body = { 
         sku: form.sku.value,
         category: form.category.value,
@@ -441,32 +536,23 @@ function initPopupHandlers() {
       };
 
       try {
+        const headers = authHeaders();
+        
         if (form.id.value) {
-          const headers = authHeaders();
-          console.log('Making PUT request to /admin/products/' + form.id.value);
-          console.log('Request headers:', headers);
-          
           await handleApiCall(
-            () => fetch('/admin/products/' + form.id.value, { 
+            () => fetch('/auth/products/' + form.id.value, { 
               method: 'PUT', 
               headers: headers,
-              credentials: 'include',
               body: JSON.stringify(body) 
             }),
             'Товар обновлен'
           );
         } else {
-          // Generate ID for new product
           body.id = Date.now().toString();
-          const headers = authHeaders();
-          console.log('Making POST request to /admin/products');
-          console.log('Request headers:', headers);
-          
           await handleApiCall(
-            () => fetch('/admin/products', { 
+            () => fetch('/auth/products', { 
               method: 'POST', 
               headers: headers,
-              credentials: 'include',
               body: JSON.stringify(body) 
             }),
             'Товар создан'
@@ -474,17 +560,20 @@ function initPopupHandlers() {
         }
         closeProductPopup();
         loadProducts();
-      } catch (error) {
-        // Error handled in handleApiCall
-      }
+      } catch (error) {}
     });
   }
 
   if (articleFormPopup) {
     articleFormPopup.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const form = e.target;
       
+      if (!isAuthenticated) {
+        showMessage('Требуется авторизация', 'error');
+        return;
+      }
+      
+      const form = e.target;
       const body = { 
         category: form.category.value,
         title: form.title.value,
@@ -503,27 +592,22 @@ function initPopupHandlers() {
 
       try {
         const headers = authHeaders();
-        console.log('Making request for article, ID:', form.id.value);
-        console.log('Request headers:', headers);
         
         if (form.id.value) {
           await handleApiCall(
-            () => fetch('/admin/articles/' + form.id.value, { 
+            () => fetch('/auth/articles/' + form.id.value, { 
               method: 'PUT', 
               headers: headers,
-              credentials: 'include',
               body: JSON.stringify(body) 
             }),
             'Статья обновлена'
           );
         } else {
-          // Generate ID for new article
           body.id = Date.now();
           await handleApiCall(
-            () => fetch('/admin/articles', { 
+            () => fetch('/auth/articles', { 
               method: 'POST', 
               headers: headers,
-              credentials: 'include',
               body: JSON.stringify(body) 
             }),
             'Статья создана'
@@ -531,9 +615,7 @@ function initPopupHandlers() {
         }
         closeArticlePopup();
         loadArticles();
-      } catch (error) {
-        // Error handled in handleApiCall
-      }
+      } catch (error) {}
     });
   }
 }
@@ -544,11 +626,23 @@ function initRefreshButtons() {
   const refreshArticlesBtn = document.getElementById('refresh-articles');
   
   if (refreshProductsBtn) {
-    refreshProductsBtn.addEventListener('click', loadProducts);
+    refreshProductsBtn.addEventListener('click', () => {
+      if (!isAuthenticated) {
+        showMessage('Требуется авторизация', 'error');
+        return;
+      }
+      loadProducts();
+    });
   }
   
   if (refreshArticlesBtn) {
-    refreshArticlesBtn.addEventListener('click', loadArticles);
+    refreshArticlesBtn.addEventListener('click', () => {
+      if (!isAuthenticated) {
+        showMessage('Требуется авторизация', 'error');
+        return;
+      }
+      loadArticles();
+    });
   }
 }
 
@@ -567,17 +661,13 @@ tokenInput.addEventListener('change', () => {
 });
 
 // Load saved token and initialize
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   const savedToken = localStorage.getItem('admin-token');
   if (savedToken) {
     tokenInput.value = savedToken;
   }
   
-  // Initialize popup handlers
   initPopupHandlers();
   initRefreshButtons();
-  
-  // Load data
-  loadProducts();
-  loadArticles();
+  checkAuth();
 });
