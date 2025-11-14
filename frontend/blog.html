@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Блог - Термоконт</title>
-    <meta name="description" content="Статьи и новости о пирометрах и тепловизорах">
+    <meta name="description" content="Статьи и новости о пирометрах и  ах">
     <link rel="stylesheet" href="css/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Yanone+Kaffeesatz:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -58,6 +58,9 @@
 
         .blog-card__content {
             padding: 25px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 200px);
         }
 
         .blog-card__category {
@@ -70,6 +73,7 @@
             font-weight: 600;
             margin-bottom: 15px;
             text-transform: uppercase;
+            align-self: flex-start;
         }
 
         .blog-card__title {
@@ -85,19 +89,48 @@
             color: var(--text-light);
             margin-bottom: 20px;
             line-height: 1.6;
+            flex-grow: 1;
         }
 
         .blog-card__meta {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
+            text-align: center;
             color: var(--text-light);
             font-size: 13px;
+            margin-top: auto;
+            gap: 15px;
         }
 
-        .blog-card__meta-left {
+        .blog-card__meta-top {
             display: flex;
-            gap: 15px;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .blog-card__meta-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .blog-card__meta-icon {
+            font-size: 16px;
+            color: var(--primary-color);
+        }
+
+        .blog-card__meta-value {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .blog-card__meta-label {
+            font-size: 11px;
+            color: var(--text-light);
+            text-transform: uppercase;
         }
 
         .blog-card__meta i {
@@ -105,21 +138,25 @@
             color: var(--primary-color);
         }
 
+        /* Обновленные стили для кнопки "Читать далее" */
         .blog-card__read-more {
-            background: var(--primary-color);
-            color: var(--white);
+            background: none;
+            color: var(--black);
             border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
+            padding: 0;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            text-decoration: underline;
+            text-underline-offset: 3px;
         }
 
         .blog-card__read-more:hover {
-            background: var(--secondary-color);
-            transform: translateY(-2px);
+            background: none;
+            color: var(--primary-color);
+            transform: none;
+            text-decoration-thickness: 2px;
         }
 
         .blog__loading {
@@ -348,14 +385,13 @@
                 text-align: center;
             }
 
-            .blog-card__meta {
-                flex-direction: column;
-                gap: 10px;
-                align-items: flex-start;
+            .blog-card__meta-top {
+                gap: 15px;
             }
 
             .blog-card__read-more {
-                width: 100%;
+                width: auto;
+                text-align: center;
             }
         }
     </style>
@@ -385,7 +421,7 @@
         <div class="container">
             <div class="page-hero__content">
                 <h1 class="page-hero__title">Блог</h1>
-                <p class="page-hero__description">Статьи, новости и полезная информация о тепловизионной технике</p>
+                <p class="page-hero__description">Статьи, новости и полезная информация</p>
             </div>
         </div>
     </section>
@@ -444,7 +480,7 @@
                         <img src="images/logo.png" alt="Термоконт">
                         <span class="footer__logo-text">ТЕРМОКОНТ</span>
                     </a>
-                    <p class="footer__description">Российский производитель пирометров и тепловизоров</p>
+                    <p class="footer__description">Российский производитель пирометров</p>
                 </div>
                 <div class="footer__menu">
                     <h3>Меню</h3>
@@ -577,10 +613,19 @@
                             <h3 class="blog-card__title">${article.title}</h3>
                             <p class="blog-card__excerpt">${article.excerpt}</p>
                             <div class="blog-card__meta">
-                                <div class="blog-card__meta-left">
-                                    <span><i class="far fa-calendar"></i> ${article.date}</span>
-                                    <span><i class="far fa-clock"></i> ${article.readTime}</span>
-                                    <span><i class="far fa-eye"></i> ${article.views}</span>
+                                <div class="blog-card__meta-top">
+                                    <div class="blog-card__meta-item">
+                                        <div class="blog-card__meta-value">${article.date}</div>
+                                        <div class="blog-card__meta-label">дата</div>
+                                    </div>
+                                    <div class="blog-card__meta-item">
+                                        <div class="blog-card__meta-value">${article.readTime}</div>
+                                        <div class="blog-card__meta-label">чтения</div>
+                                    </div>
+                                    <div class="blog-card__meta-item">
+                                        <div class="blog-card__meta-value">${article.views}</div>
+                                        <div class="blog-card__meta-label">просмотров</div>
+                                    </div>
                                 </div>
                                 <button class="blog-card__read-more" onclick="blogManager.openArticle(${article.id})">
                                     Читать далее

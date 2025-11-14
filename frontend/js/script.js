@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p style="margin: 5px 0;">📞 +7 (495) 943-68-18</p>
                     </div>
                 `,
-                hintContent: 'Термоконт - производитель пирометров и тепловизоров'
+                hintContent: 'Термоконт - производитель пирометров и  ов'
             }, {
                 preset: 'islands#icon',
                 iconColor: '#e79823',
