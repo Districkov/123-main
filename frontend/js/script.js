@@ -115,13 +115,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function initMap() {
         try {
             const map = new ymaps.Map('map', {
-                center: [55.682284, 37.447965], // Координаты ул.Озёрная, 42
+                center: [55.671331, 37.445814], // Координаты ул.Озёрная, 42
                 zoom: 16,
                 controls: ['zoomControl', 'fullscreenControl']
             });
 
             // Метка
-            const placemark = new ymaps.Placemark([55.682284, 37.447965], {
+            const placemark = new ymaps.Placemark([55.671331, 37.445814], {
                 balloonContent: `
                     <div style="padding: 10px;">
                         <strong style="font-size: 16px; color: #e79823;">Термоконт</strong><br>

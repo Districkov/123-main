@@ -19,6 +19,30 @@
         emailjs.init("ggMEErezyaXf57w61"); // Замените на ваш Public Key
     })();
 </script>
+<style>
+    /* Стили для плавной прокрутки */
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Дополнительные стили для якорных ссылок */
+    .nav__link[href*="#"] {
+        transition: all 0.3s ease;
+    }
+    
+    .nav__link[href*="#"]:hover {
+        color: var(--primary-color);
+    }
+    
+    /* Стили для мобильного меню с якорями */
+    .mobile-menu__item[href*="#"] {
+        transition: all 0.3s ease;
+    }
+    
+    .mobile-menu__item[href*="#"]:hover {
+        color: var(--primary-color);
+    }
+</style>
 </head>
 <body>
     <!-- Header -->
@@ -34,7 +58,7 @@
                     <a href="catalog.html" class="nav__link">Каталог</a>
                     <a href="blog.html" class="nav__link">Блог</a>
                     <a href="documents.html" class="nav__link">Документы</a>
-                    <a href="index.html#contacts" class="nav__link">Контакты</a>
+                    <a href="#contacts" class="nav__link">Контакты</a>
                     
                     <a href="admin.html" class="nav__link admin-link" target="_blank" >
                         <i class="fas fa-user"></i>
@@ -51,7 +75,10 @@
                 <div class="slide__content">
                     <h1 class="slide__title">Пирометры  </h1>
                     <p class="slide__description">Российское производство с гарантией качества для промышленности и энергетики</p>
-                    <a href="catalog.html" class="btn btn--primary">Смотреть каталог</a>
+                    <div class="slide__buttons">
+                        <a href="catalog.html" class="btn btn--primary">Смотреть каталог</a>
+                        <a href="#contacts" class="btn btn--outline">Связаться с нами</a>
+                    </div>
                 </div>
                 <div class="slide__image">
                     <img src="images/1.png" alt="Пирометры">
@@ -61,7 +88,10 @@
                 <div class="slide__content">
                     <h1 class="slide__title">Высокая точность измерений</h1>
                     <p class="slide__description">Современное оборудование для контроля температуры</p>
-                    <a href="catalog.html" class="btn btn--primary">Узнать больше</a>
+                    <div class="slide__buttons">
+                        <a href="catalog.html" class="btn btn--primary">Узнать больше</a>
+                        <a href="#contacts" class="btn btn--outline">Получить консультацию</a>
+                    </div>
                 </div>
                 <div class="slide__image">
                     <img src="images/2.png" alt=" ">
@@ -71,7 +101,10 @@
                 <div class="slide__content">
                     <h1 class="slide__title">Профессиональные решения</h1>
                     <p class="slide__description">Для металлургии, энергетики и строительства</p>
-                    <a href="catalog.html" class="btn btn--primary">Наши решения</a>
+                    <div class="slide__buttons">
+                        <a href="catalog.html" class="btn btn--primary">Наши решения</a>
+                        <a href="#contacts" class="btn btn--outline">Заказать звонок</a>
+                    </div>
                 </div>
                 <div class="slide__image">
                     <img src="images/3.png" alt="Оборудование">
@@ -133,7 +166,6 @@
                     <p>Полный комплекс сервисных услуг и ремонта</p>
                 </div>
             </div>
-        </div>
     </section>
 
     <!-- Gallery Section - Full Width -->
@@ -246,7 +278,7 @@
                     </div>
                 </div>
                 <div class="contacts__map">
-                    <div id="map" style="width: 100%; height: 400px"></div>
+                    <div id="map" style="width: 100%; height: 100%"></div>
                 </div>
             </div>
         </div>
@@ -269,7 +301,7 @@
                     <a href="catalog.html">Каталог</a>
                     <a href="blog.html">Блог</a>
                     <a href="documents.html">Документы</a>
-                    <a href="index.html#contacts">Контакты</a>
+                    <a href="#contacts">Контакты</a>
                 </div>
                 <div class="footer__docs">
                     <h3>Документы</h3>
@@ -317,6 +349,10 @@
             <i class="fas fa-file-alt"></i>
             <span>Документы</span>
         </a>
+        <a href="#contacts" class="mobile-menu__item">
+            <i class="fas fa-phone"></i>
+            <span>Контакты</span>
+        </a>
     </div>
 
     <!-- Chat Widget -->
@@ -343,5 +379,57 @@
     </div>
 
     <script src="js/script.js"></script>
+    <script>
+        // Дополнительный JavaScript для улучшения работы якорных ссылок
+        document.addEventListener('DOMContentLoaded', function() {
+            // Обработка якорных ссылок в навигации
+            const navLinks = document.querySelectorAll('.nav__link[href*="#"]');
+            const mobileLinks = document.querySelectorAll('.mobile-menu__item[href*="#"]');
+            
+            // Функция для плавной прокрутки
+            function smoothScroll(target) {
+                const element = document.querySelector(target);
+                if (element) {
+                    const offsetTop = element.getBoundingClientRect().top + window.pageYOffset;
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+            
+            // Обработчики для десктопной навигации
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = this.getAttribute('href');
+                    smoothScroll(target);
+                });
+            });
+            
+            // Обработчики для мобильной навигации
+            mobileLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = this.getAttribute('href');
+                    smoothScroll(target);
+                });
+            });
+            
+            // Обработка якорных ссылок в кнопках
+            const anchorButtons = document.querySelectorAll('a[href*="#"]');
+            anchorButtons.forEach(button => {
+                if (button.getAttribute('href') !== '#') {
+                    button.addEventListener('click', function(e) {
+                        const href = this.getAttribute('href');
+                        if (href.startsWith('#')) {
+                            e.preventDefault();
+                            smoothScroll(href);
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>
