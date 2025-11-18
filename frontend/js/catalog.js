@@ -1,4 +1,4 @@
-// catalog.js - Исправленная версия с правильным путем
+// catalog.js - Полная версия с исправлением попапа
 class CatalogManager {
     constructor() {
         this.products = [];
@@ -89,7 +89,6 @@ class CatalogManager {
         };
     }
 
-    // Все остальные методы остаются без изменений из вашей рабочей версии
     initTemperatureSlider() {
         const tempMin = document.getElementById('tempMin');
         const tempMax = document.getElementById('tempMax');
@@ -617,7 +616,7 @@ class CatalogManager {
                         </div>
                     </div>
                 </div>
-                <div class="popup__info">
+                <div class="popup__info" style="padding-right: 50px;">
                     <span class="popup__badge">${product.category || 'Категория не указана'}</span>
                     <h1>${product.title || 'Без названия'}</h1>
                     <div class="popup__price">${this.formatPrice(product.price)} ₽</div>
