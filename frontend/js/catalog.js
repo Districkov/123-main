@@ -1,4 +1,4 @@
-// catalog.js - Полная версия с исправлением попапа
+// catalog.js - Полная версия с исправленными подсказками
 class CatalogManager {
     constructor() {
         this.products = [];
@@ -33,11 +33,100 @@ class CatalogManager {
         this.hideLoading();
         this.updateResultsCount();
         this.renderPagination();
+        this.initTooltips();
     }
+initTooltips() {
+    const tooltips = document.querySelectorAll('.dynamic-tooltip');
+    
+    tooltips.forEach((tooltip) => {
+        const icon = tooltip.querySelector('i');
+        const tooltipContent = tooltip.querySelector('.tooltip-content');
+        
+        if (!icon || !tooltipContent) return;
+
+        // Стили для подсказки - fixed positioning чтобы была поверх всего
+        tooltipContent.style.cssText = `
+            position: fixed;
+            background: #2c3e50;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.4;
+            width: 280px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 10050;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            pointer-events: none;
+            text-align: left;
+            white-space: normal;
+            border: none;
+        `;
+
+        // Добавляем стрелку снизу (подсказка будет над иконкой)
+        if (!tooltipContent.querySelector('.tooltip-arrow')) {
+            const arrow = document.createElement('div');
+            arrow.className = 'tooltip-arrow';
+            arrow.style.cssText = `
+                position: absolute;
+                bottom: -6px;
+                left: 20px;
+                border: 6px solid transparent;
+                border-top-color: #2c3e50;
+                border-bottom: none;
+            `;
+            tooltipContent.appendChild(arrow);
+        }
+
+        // Показ подсказки - позиционируем ВЫШЕ иконки
+        icon.addEventListener('mouseenter', (e) => {
+            const rect = icon.getBoundingClientRect();
+            const scrollY = window.scrollY || window.pageYOffset;
+            
+            // Позиционируем ВЫШЕ иконки с большим отступом
+            const tooltipTop = rect.top + scrollY - tooltipContent.offsetHeight - 25;
+            const tooltipLeft = rect.left - 120; // Сдвигаем левее чтобы не перекрывать текст
+            
+            tooltipContent.style.top = Math.max(10, tooltipTop) + 'px';
+            tooltipContent.style.left = Math.max(10, tooltipLeft) + 'px';
+            tooltipContent.style.opacity = '1';
+            tooltipContent.style.visibility = 'visible';
+        });
+        
+        // Скрытие подсказки
+        icon.addEventListener('mouseleave', (e) => {
+            tooltipContent.style.opacity = '0';
+            tooltipContent.style.visibility = 'hidden';
+        });
+
+        // Предотвращаем закрытие при наведении на саму подсказку
+        tooltipContent.addEventListener('mouseenter', (e) => {
+            tooltipContent.style.opacity = '1';
+            tooltipContent.style.visibility = 'visible';
+        });
+
+        tooltipContent.addEventListener('mouseleave', (e) => {
+            tooltipContent.style.opacity = '0';
+            tooltipContent.style.visibility = 'hidden';
+        });
+    });
+
+    // Закрытие подсказок при клике вне области
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.dynamic-tooltip')) {
+            document.querySelectorAll('.tooltip-content').forEach(tooltip => {
+                tooltip.style.opacity = '0';
+                tooltip.style.visibility = 'hidden';
+            });
+        }
+    });
+}
+    
 
     async loadProducts() {
         try {
-            // Используем рабочий путь
             const response = await fetch('./data/products.json');
             
             if (!response.ok) {
@@ -46,7 +135,6 @@ class CatalogManager {
             
             const rawProducts = await response.json();
             
-            // Преобразуем данные в нужный формат
             this.products = rawProducts.map(product => this.transformProductData(product));
             this.filteredProducts = [...this.products];
             
@@ -54,21 +142,19 @@ class CatalogManager {
             
         } catch (error) {
             console.error('Error loading products:', error);
-            // Fallback к пустому массиву
             this.products = [];
             this.filteredProducts = [];
         }
     }
 
     transformProductData(rawProduct) {
-        // Преобразуем вашу структуру данных в формат, ожидаемый каталогом
         return {
             id: rawProduct.id || '',
             sku: rawProduct.sku || '',
             category: rawProduct.category || '',
             title: rawProduct.title || '',
             description: rawProduct.description || '',
-            image: rawProduct.photo || '', // photo -> image
+            image: rawProduct.photo || '',
             price: rawProduct.price || 0,
             characteristics: {
                 визирование: rawProduct.characteristics?.["Показатель визирования"] || '',
@@ -104,15 +190,12 @@ class CatalogManager {
             const min = parseInt(tempMin.value);
             const max = parseInt(tempMax.value);
             
-            // Update display values
             minValue.textContent = min + '°C';
             maxValue.textContent = max + '°C';
             
-            // Update input fields
             tempMinInput.value = min;
             tempMaxInput.value = max;
             
-            // Update track gradient - полный градиент от синего к красному
             const minPercent = (min / 3000) * 100;
             const maxPercent = (max / 3000) * 100;
             
@@ -127,14 +210,12 @@ class CatalogManager {
                 #ddd ${maxPercent}%, 
                 #ddd 100%)`;
             
-            // Ensure min doesn't exceed max
             if (min >= max) {
                 tempMin.value = max - 50;
                 updateSlider();
             }
         };
 
-        // Event listeners for sliders
         tempMin.addEventListener('input', () => {
             updateSlider();
             this.applyTemperatureFilter();
@@ -144,7 +225,6 @@ class CatalogManager {
             this.applyTemperatureFilter();
         });
 
-        // Event listeners for input fields
         tempMinInput.addEventListener('input', function() {
             let value = parseInt(this.value);
             if (isNaN(value)) value = 0;
@@ -167,7 +247,6 @@ class CatalogManager {
             catalog.applyTemperatureFilter();
         });
 
-        // Initialize slider with full range
         tempMin.value = 0;
         tempMax.value = 3000;
         updateSlider();
@@ -183,7 +262,6 @@ class CatalogManager {
     }
 
     setupEventListeners() {
-        // Чекбоксы фильтров
         document.querySelectorAll('.filter-checkbox input').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 const filterType = e.target.getAttribute('data-filter');
@@ -200,31 +278,26 @@ class CatalogManager {
             });
         });
 
-        // Поиск
         document.getElementById('searchInput').addEventListener('input', debounce((e) => {
             this.searchQuery = e.target.value.toLowerCase();
             this.currentPage = 1;
             this.applyFilters();
         }, 300));
 
-        // Сортировка
         document.getElementById('sortSelect').addEventListener('change', (e) => {
             this.sortBy = e.target.value;
             this.currentPage = 1;
             this.applyFilters();
         });
 
-        // Сброс фильтров
         document.getElementById('resetFilters').addEventListener('click', () => {
             this.resetFilters();
         });
 
-        // Мобильные фильтры
         document.getElementById('toggleFilters').addEventListener('click', () => {
             this.toggleMobileFilters();
         });
 
-        // Закрытие мобильных фильтров
         document.addEventListener('click', (e) => {
             const filtersMain = document.querySelector('.filters__main');
             const toggleBtn = document.getElementById('toggleFilters');
@@ -237,7 +310,6 @@ class CatalogManager {
             }
         });
 
-        // Закрытие попапа продукта
         document.querySelector('.product-popup__close').addEventListener('click', () => {
             this.closeProductPopup();
         });
@@ -246,14 +318,12 @@ class CatalogManager {
             this.closeProductPopup();
         });
 
-        // Закрытие по ESC
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.closeProductPopup();
             }
         });
 
-        // Пагинация
         document.addEventListener('click', (e) => {
             if (e.target.closest('.pagination__number')) {
                 const page = parseInt(e.target.closest('.pagination__number').dataset.page);
@@ -268,7 +338,6 @@ class CatalogManager {
 
     applyFilters() {
         let filtered = this.products.filter(product => {
-            // Поиск
             if (this.searchQuery) {
                 const searchStr = `${product.title} ${product.sku} ${product.description} ${product.category}`.toLowerCase();
                 if (!searchStr.includes(this.searchQuery)) {
@@ -276,7 +345,6 @@ class CatalogManager {
                 }
             }
 
-            // Фильтры по характеристикам
             for (const [filterType, selectedValues] of Object.entries(this.currentFilters)) {
                 if (selectedValues.length > 0) {
                     if (filterType === 'temperature') {
@@ -299,9 +367,7 @@ class CatalogManager {
             return true;
         });
 
-        // Сортировка
         filtered = this.sortProducts(filtered);
-
         this.filteredProducts = filtered;
         this.renderProducts();
         this.updateResultsCount();
@@ -313,8 +379,6 @@ class CatalogManager {
             const [min, max] = range.split('-').map(Number);
             const productMin = product.characteristics.температураМин;
             const productMax = product.characteristics.температураМакс;
-            
-            // Проверяем пересечение диапазонов
             return productMin <= max && productMax >= min;
         });
     }
@@ -341,21 +405,17 @@ class CatalogManager {
     }
 
     resetFilters() {
-        // Сброс чекбоксов
         document.querySelectorAll('.filter-checkbox input').forEach(checkbox => {
             checkbox.checked = false;
         });
 
-        // Сброс ползунка температуры
         document.getElementById('tempMin').value = 0;
         document.getElementById('tempMax').value = 3000;
         this.initTemperatureSlider();
 
-        // Сброс поиска и сортировки
         document.getElementById('searchInput').value = '';
         document.getElementById('sortSelect').value = 'name_asc';
 
-        // Сброс состояния
         this.currentFilters = {
             temperature: [],
             визирование: [],
@@ -511,25 +571,20 @@ class CatalogManager {
         
         paginationElement.style.display = 'flex';
         
-        // Кнопки назад/вперед
         document.getElementById('prevPage').disabled = this.currentPage === 1;
         document.getElementById('nextPage').disabled = this.currentPage === totalPages;
         
-        // Номера страниц
         const numbersContainer = document.getElementById('paginationNumbers');
         numbersContainer.innerHTML = '';
         
-        // Всегда показываем первую страницу
         if (totalPages > 0) {
             this.createPageNumber(1, numbersContainer);
         }
         
-        // Показываем многоточие если нужно
         if (this.currentPage > 3) {
             this.createEllipsis(numbersContainer);
         }
         
-        // Показываем текущую страницу и соседние
         const startPage = Math.max(2, this.currentPage - 1);
         const endPage = Math.min(totalPages - 1, this.currentPage + 1);
         
@@ -539,12 +594,10 @@ class CatalogManager {
             }
         }
         
-        // Показываем многоточие если нужно
         if (this.currentPage < totalPages - 2) {
             this.createEllipsis(numbersContainer);
         }
         
-        // Всегда показываем последнюю страницу если есть больше 1 страницы
         if (totalPages > 1) {
             this.createPageNumber(totalPages, numbersContainer);
         }
@@ -570,7 +623,6 @@ class CatalogManager {
         this.renderProducts();
         this.renderPagination();
         this.updateResultsCount();
-        // Прокрутка к верху каталога
         document.getElementById('catalogGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -738,7 +790,6 @@ function openChatWithProduct(productName, productSku) {
         productInput.value = `${productName} (${productSku})`;
     }
     
-    // Закрываем попап продукта если открыт
     if (catalog && catalog.currentProduct) {
         catalog.closeProductPopup();
     }
@@ -755,7 +806,6 @@ function openChat() {
     
     popup.classList.add('active');
     
-    // Добавляем обработчик для закрытия при клике вне попапа
     setTimeout(() => {
         const closeHandler = function(e) {
             if (!popup.contains(e.target) && !e.target.closest('.chat-widget__button')) {
@@ -767,7 +817,6 @@ function openChat() {
     }, 100);
 }
 
-// Утилиты
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -822,7 +871,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const messageDiv = document.getElementById('form-message');
             const chatPopup = document.querySelector('.chat-widget__popup');
             
-            // Показываем индикатор загрузки
             const originalText = submitButton.textContent;
             submitButton.disabled = true;
             submitButton.textContent = 'Отправка...';
@@ -840,18 +888,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     date: new Date().toLocaleString('ru-RU')
                 };
 
-                // Валидация
                 if (!formData.name || !formData.email || !formData.products) {
                     throw new Error('Пожалуйста, заполните все обязательные поля');
                 }
 
-                // Проверка email
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(formData.email)) {
                     throw new Error('Пожалуйста, введите корректный email');
                 }
 
-                // EmailJS отправка
                 const response = await emailjs.send(
                     'service_0su0smw',
                     'template_hqq0w8l',
@@ -872,7 +917,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     this.reset();
                     
-                    // Автоматически закрываем попап через 3 секунды
                     setTimeout(() => {
                         if (chatPopup) chatPopup.classList.remove('active');
                     }, 3000);
@@ -903,13 +947,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Предотвращаем закрытие попапа при клике на контент
     document.querySelector('.product-popup__content').addEventListener('click', (e) => {
         e.stopPropagation();
     });
 });
 
-// Экспорт для глобального использования
 window.CatalogManager = CatalogManager;
 window.openChatWithProduct = openChatWithProduct;
 window.openChat = openChat;

@@ -1000,6 +1000,7 @@ body {
     top: 120px;
     max-height: calc(100vh - 140px);
     overflow-y: auto;
+    overflow-x: visible;
 }
 
 .filters__header {
@@ -1056,11 +1057,13 @@ body {
     display: flex;
     flex-direction: column;
     gap: 25px;
+    overflow: visible;
 }
 
 .filter-group {
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 20px;
+    overflow: visible;
 }
 
 .filter-group:last-child {
@@ -1078,6 +1081,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    overflow: visible;
 }
 
 .filter-checkbox {
@@ -1087,6 +1091,8 @@ body {
     cursor: pointer;
     padding: 8px 0;
     transition: color 0.3s ease;
+    position: relative;
+    overflow: visible;
 }
 
 .filter-checkbox:hover {
@@ -1097,6 +1103,11 @@ body {
     width: 18px;
     height: 18px;
     accent-color: var(--primary-color);
+    flex-shrink: 0;
+}
+
+.filter-checkbox span {
+    flex: 1;
 }
 
 /* Temperature Range Slider */
@@ -1201,6 +1212,199 @@ body {
     color: var(--text-light);
 }
 
+/* ==================== */
+/* FILTER TOOLTIP STYLES - WORKING SOLUTION */
+/* ==================== */
+
+.filter-tooltip {
+    position: relative;
+    display: inline-flex;
+    margin-left: 8px;
+    color: var(--primary-color);
+    cursor: help;
+    z-index: 1000;
+}
+
+.filter-tooltip i {
+    font-size: 14px;
+    transition: color 0.3s ease;
+}
+
+.filter-tooltip:hover i {
+    color: var(--primary-dark);
+}
+
+/* Подсказка позиционируется относительно окна браузера */
+.filter-tooltip .tooltip-content {
+    position: fixed;
+    background: var(--secondary-color);
+    color: var(--white);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    width: 280px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 10050; /* Очень высокий z-index */
+    box-shadow: var(--shadow-hover);
+    pointer-events: none;
+    text-align: left;
+    white-space: normal;
+}
+
+.filter-tooltip .tooltip-content::after {
+    content: '';
+    position: absolute;
+    border: 6px solid transparent;
+}
+
+/* Позиционирование справа от иконки */
+.filter-tooltip.right-tooltip .tooltip-content {
+    top: 50vh;
+    left: calc(50vw + 200px);
+    transform: translateY(-50%) translateX(-10px);
+}
+
+.filter-tooltip.right-tooltip .tooltip-content::after {
+    top: 50%;
+    left: -6px;
+    transform: translateY(-50%);
+    border-right-color: var(--secondary-color);
+    border-left: none;
+}
+
+.filter-tooltip.right-tooltip:hover .tooltip-content {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(0);
+}
+
+/* ==================== */
+/* FIX FILTERS CONTAINER - CRITICAL */
+/* ==================== */
+
+.filters__main {
+    background: var(--white);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 120px;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+    /* ВАЖНО: убираем overflow-x */
+    overflow-x: clip; /* Используем clip вместо visible */
+    z-index: 1000;
+}
+
+.filters__groups {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    /* Убираем все overflow */
+    overflow: visible;
+    position: relative;
+}
+
+.filter-group {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 20px;
+    /* Убираем все overflow */
+    overflow: visible;
+    position: relative;
+}
+
+.filter-group:last-child {
+    border-bottom: none;
+}
+
+.filter-group h3 {
+    font-family: 'Yanone Kaffeesatz', sans-serif;
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: var(--secondary-color);
+}
+
+.filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    /* Убираем все overflow */
+    overflow: visible;
+    position: relative;
+}
+
+.filter-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    padding: 8px 0;
+    transition: color 0.3s ease;
+    position: relative;
+    /* Убираем все overflow */
+    overflow: visible;
+}
+
+.filter-checkbox:hover {
+    color: var(--primary-color);
+}
+
+.filter-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.filter-checkbox span {
+    flex: 1;
+    line-height: 1.4;
+}
+
+/* Альтернативное решение с JavaScript позиционированием */
+.filter-tooltip.dynamic-tooltip .tooltip-content {
+    position: fixed;
+    z-index: 10050;
+}
+
+/* Для мобильных устройств */
+@media (max-width: 768px) {
+    .filters__main {
+        position: static;
+        max-height: none;
+        overflow: visible;
+    }
+    
+    .filter-tooltip .tooltip-content {
+        position: fixed;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) scale(0.9);
+        width: 90%;
+        max-width: 300px;
+        z-index: 10050;
+    }
+    
+    .filter-tooltip:hover .tooltip-content {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    
+    .filter-tooltip .tooltip-content::after {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .filter-tooltip .tooltip-content {
+        width: 95%;
+        font-size: 11px;
+        padding: 10px 12px;
+    }
+}
 /* ==================== */
 /* SORTING STYLES */
 /* ==================== */
@@ -2516,6 +2720,27 @@ select:focus {
         display: block;
     }
     
+    /* Filter tooltips mobile */
+    .filter-tooltip .tooltip-content {
+        width: 250px;
+        font-size: 11px;
+        padding: 10px 12px;
+        left: auto;
+        right: 0;
+        transform: translateY(-50%) translateX(0);
+    }
+    
+    .filter-tooltip .tooltip-content::after {
+        left: auto;
+        right: -6px;
+        border-right-color: transparent;
+        border-left-color: var(--secondary-color);
+    }
+    
+    .filter-tooltip:hover .tooltip-content {
+        transform: translateY(-50%) translateX(-5px);
+    }
+    
     /* Blog Responsive */
     .blog__featured {
         grid-template-columns: 1fr;
@@ -2672,6 +2897,20 @@ select:focus {
     
     .sort-group label {
         text-align: center;
+    }
+    
+    /* Filter tooltips small mobile */
+    .filter-tooltip .tooltip-content {
+        width: 220px;
+        font-size: 10px;
+    }
+    
+    .filter-checkbox {
+        align-items: flex-start;
+    }
+    
+    .filter-tooltip {
+        margin-top: 2px;
     }
     
     /* Contacts Mobile Small */

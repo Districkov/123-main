@@ -157,25 +157,48 @@
                                 </label>
                             </div>
                         </div>
-
                         <!-- Принцип действия -->
-                        <div class="filter-group">
-                            <h3>Принцип действия</h3>
-                            <div class="filter-options">
-                                <label class="filter-checkbox">
-                                    <input type="checkbox" value="Энергетический (яркостной)" data-filter="принципДействия">
-                                    <span>Энергетический (яркостной)</span>
-                                </label>
-                                <label class="filter-checkbox">
-                                    <input type="checkbox" value="Спектрального отношения" data-filter="принципДействия">
-                                    <span>Спектрального отношения</span>
-                                </label>
-                                <label class="filter-checkbox">
-                                    <input type="checkbox" value="Радиационный" data-filter="принципДействия">
-                                    <span>Радиационный</span>
-                                </label>
-                            </div>
-                        </div>
+<div class="filter-group">
+    <h3>Принцип действия</h3>
+    <div class="filter-options">
+        <label class="filter-checkbox">
+            <input type="checkbox" value="Энергетический (яркостной)" data-filter="принципДействия">
+            <span>Энергетический (яркостной)</span>
+            <div class="filter-tooltip dynamic-tooltip">
+                <i class="fas fa-info-circle"></i>
+                <div class="tooltip-content">
+                    <strong>Энергетический (яркостной) пирометр</strong><br>
+                    Измеряет температуру по интенсивности излучения в узком спектральном диапазоне. 
+                    Подходит для объектов с известной и стабильной излучательной способностью.
+                </div>
+            </div>
+        </label>
+        <label class="filter-checkbox">
+            <input type="checkbox" value="Спектрального отношения" data-filter="принципДействия">
+            <span>Спектрального отношения</span>
+            <div class="filter-tooltip dynamic-tooltip">
+                <i class="fas fa-info-circle"></i>
+                <div class="tooltip-content">
+                    <strong>Пирометр спектрального отношения</strong><br>
+                    Измеряет отношение интенсивностей излучения на двух разных длинах волн. 
+                    Менее чувствителен к изменению излучательной способности и запыленности.
+                </div>
+            </div>
+        </label>
+        <label class="filter-checkbox">
+            <input type="checkbox" value="Радиационный" data-filter="принципДействия">
+            <span>Радиационный</span>
+            <div class="filter-tooltip dynamic-tooltip">
+                <i class="fas fa-info-circle"></i>
+                <div class="tooltip-content">
+                    <strong>Радиационный пирометр</strong><br>
+                    Измеряет полную мощность теплового излучения объекта. 
+                    Используется для высокотемпературных измерений, требует точного знания излучательной способности.
+                </div>
+            </div>
+        </label>
+    </div>
+</div> 
 
                         <!-- Материалы -->
                         <div class="filter-group">
