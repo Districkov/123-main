@@ -4,18 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Каталог продукции - Термоконт</title>
-    <meta name="description" content="Каталог пирометров и  ов от российского производителя">
+    <meta name="description" content="Каталог пирометров и оборудования от российского производителя">
     <link rel="stylesheet" href="css/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Yanone+Kaffeesatz:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- EmailJS -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script>
-        // Инициализация EmailJS
-        (function() {
-            emailjs.init("ggMEErezyaXf57w61");
-        })();
-    </script>
 </head>
 <body>
     <!-- Header -->
@@ -303,7 +295,9 @@
                         <div class="results__header">
                             <div class="results__info">
                                 <span id="resultsCount">Найдено товаров: 0</span>
-                                <div class="sort-group">
+                                
+                                <!-- Desktop Sort -->
+                                <div class="sort-group desktop-sort">
                                     <label for="sortSelect">Сортировка:</label>
                                     <select id="sortSelect" class="filter-select">
                                         <option value="name_asc">По названию (А-Я)</option>
@@ -312,6 +306,18 @@
                                         <option value="price_desc">По цене (убывание)</option>
                                         <option value="temp_asc">По температуре (min)</option>
                                         <option value="temp_desc">По температуре (max)</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Mobile Sort -->
+                                <div class="mobile-sort">
+                                    <select id="sortSelectMobile" class="filter-select">
+                                        <option value="name_asc">Название (А-Я)</option>
+                                        <option value="name_desc">Название (Я-А)</option>
+                                        <option value="price_asc">Цена (↑)</option>
+                                        <option value="price_desc">Цена (↓)</option>
+                                        <option value="temp_asc">Температура (↑)</option>
+                                        <option value="temp_desc">Температура (↓)</option>
                                     </select>
                                 </div>
                             </div>
