@@ -1,4 +1,4 @@
-// catalog.js - Полная версия с исправленными подсказками
+// catalog.js - Версия без закрепленного фильтра и подсказок
 class CatalogManager {
     constructor() {
         this.products = [];
@@ -33,97 +33,10 @@ class CatalogManager {
         this.hideLoading();
         this.updateResultsCount();
         this.renderPagination();
-        this.initTooltips();
+        // Убрана инициализация подсказок
     }
-initTooltips() {
-    const tooltips = document.querySelectorAll('.dynamic-tooltip');
-    
-    tooltips.forEach((tooltip) => {
-        const icon = tooltip.querySelector('i');
-        const tooltipContent = tooltip.querySelector('.tooltip-content');
-        
-        if (!icon || !tooltipContent) return;
 
-        // Стили для подсказки - fixed positioning чтобы была поверх всего
-        tooltipContent.style.cssText = `
-            position: fixed;
-            background: #2c3e50;
-            color: white;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 12px;
-            line-height: 1.4;
-            width: 280px;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-            z-index: 10050;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            pointer-events: none;
-            text-align: left;
-            white-space: normal;
-            border: none;
-        `;
-
-        // Добавляем стрелку снизу (подсказка будет над иконкой)
-        if (!tooltipContent.querySelector('.tooltip-arrow')) {
-            const arrow = document.createElement('div');
-            arrow.className = 'tooltip-arrow';
-            arrow.style.cssText = `
-                position: absolute;
-                bottom: -6px;
-                left: 20px;
-                border: 6px solid transparent;
-                border-top-color: #2c3e50;
-                border-bottom: none;
-            `;
-            tooltipContent.appendChild(arrow);
-        }
-
-        // Показ подсказки - позиционируем ВЫШЕ иконки
-        icon.addEventListener('mouseenter', (e) => {
-            const rect = icon.getBoundingClientRect();
-            const scrollY = window.scrollY || window.pageYOffset;
-            
-            // Позиционируем ВЫШЕ иконки с большим отступом
-            const tooltipTop = rect.top + scrollY - tooltipContent.offsetHeight - 25;
-            const tooltipLeft = rect.left - 120; // Сдвигаем левее чтобы не перекрывать текст
-            
-            tooltipContent.style.top = Math.max(10, tooltipTop) + 'px';
-            tooltipContent.style.left = Math.max(10, tooltipLeft) + 'px';
-            tooltipContent.style.opacity = '1';
-            tooltipContent.style.visibility = 'visible';
-        });
-        
-        // Скрытие подсказки
-        icon.addEventListener('mouseleave', (e) => {
-            tooltipContent.style.opacity = '0';
-            tooltipContent.style.visibility = 'hidden';
-        });
-
-        // Предотвращаем закрытие при наведении на саму подсказку
-        tooltipContent.addEventListener('mouseenter', (e) => {
-            tooltipContent.style.opacity = '1';
-            tooltipContent.style.visibility = 'visible';
-        });
-
-        tooltipContent.addEventListener('mouseleave', (e) => {
-            tooltipContent.style.opacity = '0';
-            tooltipContent.style.visibility = 'hidden';
-        });
-    });
-
-    // Закрытие подсказок при клике вне области
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.dynamic-tooltip')) {
-            document.querySelectorAll('.tooltip-content').forEach(tooltip => {
-                tooltip.style.opacity = '0';
-                tooltip.style.visibility = 'hidden';
-            });
-        }
-    });
-}
-    
+    // Убраны методы initStickyFilter() и initTooltips()
 
     async loadProducts() {
         try {
@@ -577,27 +490,29 @@ initTooltips() {
         const numbersContainer = document.getElementById('paginationNumbers');
         numbersContainer.innerHTML = '';
         
-        if (totalPages > 0) {
-            this.createPageNumber(1, numbersContainer);
-        }
+        // Всегда показываем первую страницу
+        this.createPageNumber(1, numbersContainer);
         
-        if (this.currentPage > 3) {
+        // Определяем диапазон для 5 центральных страниц
+        let startPage = Math.max(2, this.currentPage - 2);
+        let endPage = Math.min(totalPages - 1, this.currentPage + 2);
+        
+        // Добавляем многоточие после первой страницы, если есть разрыв
+        if (startPage > 2) {
             this.createEllipsis(numbersContainer);
         }
         
-        const startPage = Math.max(2, this.currentPage - 1);
-        const endPage = Math.min(totalPages - 1, this.currentPage + 1);
-        
+        // Добавляем центральные страницы (5 штук)
         for (let i = startPage; i <= endPage; i++) {
-            if (i > 1 && i < totalPages) {
-                this.createPageNumber(i, numbersContainer);
-            }
+            this.createPageNumber(i, numbersContainer);
         }
         
-        if (this.currentPage < totalPages - 2) {
+        // Добавляем многоточие перед последней страницей, если есть разрыв
+        if (endPage < totalPages - 1) {
             this.createEllipsis(numbersContainer);
         }
         
+        // Всегда показываем последнюю страницу (если она не первая)
         if (totalPages > 1) {
             this.createPageNumber(totalPages, numbersContainer);
         }
@@ -901,7 +816,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'service_0su0smw',
                     'template_hqq0w8l',
                     {
-                        to_email: 'perometer@inbox.ru',
+                        to_email: ' pyrometer@inbox.ru',
                         from_name: formData.name,
                         from_email: formData.email,
                         products: formData.products,

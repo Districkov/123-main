@@ -247,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'service_0su0smw', // Ваш Service ID
                     'template_hqq0w8l', // НУЖНО ЗАМЕНИТЬ на ваш Template ID
                     {
-                        to_email: 'perometer@inbox.ru',
+                        to_email: ' pyrometer@inbox.ru',
                         from_name: formData.name,
                         from_email: formData.email,
                         products: formData.products,

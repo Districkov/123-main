@@ -953,7 +953,7 @@ body {
 }
 
 /* ==================== */
-/* UPDATED CATALOG STYLES */
+/* UPDATED CATALOG STYLES - FIXED Z-INDEX */
 /* ==================== */
 
 /* Page Hero Styles */
@@ -982,6 +982,8 @@ body {
     padding: 40px 0;
     background: var(--white);
     border-bottom: 1px solid var(--border-color);
+    position: relative;
+    z-index: 100;
 }
 
 .filters__layout {
@@ -1000,7 +1002,8 @@ body {
     top: 120px;
     max-height: calc(100vh - 140px);
     overflow-y: auto;
-    overflow-x: visible;
+    overflow-x: clip;
+    z-index: 10;
 }
 
 .filters__header {
@@ -1010,6 +1013,8 @@ body {
     margin-bottom: 25px;
     padding-bottom: 15px;
     border-bottom: 1px solid var(--border-color);
+    position: relative;
+    z-index: 1;
 }
 
 .filters__header h2 {
@@ -1022,6 +1027,8 @@ body {
 /* Search and Sort */
 .filters__search-sort {
     margin-bottom: 25px;
+    position: relative;
+    z-index: 1;
 }
 
 .search-box {
@@ -1058,12 +1065,16 @@ body {
     flex-direction: column;
     gap: 25px;
     overflow: visible;
+    position: relative;
+    z-index: 1;
 }
 
 .filter-group {
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 20px;
     overflow: visible;
+    position: relative;
+    z-index: 1;
 }
 
 .filter-group:last-child {
@@ -1075,6 +1086,8 @@ body {
     font-size: 20px;
     margin-bottom: 15px;
     color: var(--secondary-color);
+    position: relative;
+    z-index: 1;
 }
 
 .filter-options {
@@ -1082,17 +1095,20 @@ body {
     flex-direction: column;
     gap: 10px;
     overflow: visible;
+    position: relative;
+    z-index: 1;
 }
 
 .filter-checkbox {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     cursor: pointer;
     padding: 8px 0;
     transition: color 0.3s ease;
     position: relative;
     overflow: visible;
+    z-index: 1;
 }
 
 .filter-checkbox:hover {
@@ -1104,10 +1120,12 @@ body {
     height: 18px;
     accent-color: var(--primary-color);
     flex-shrink: 0;
+    margin-top: 2px;
 }
 
 .filter-checkbox span {
     flex: 1;
+    line-height: 1.4;
 }
 
 /* Temperature Range Slider */
@@ -1213,7 +1231,7 @@ body {
 }
 
 /* ==================== */
-/* FILTER TOOLTIP STYLES - WORKING SOLUTION */
+/* FIXED FILTER TOOLTIP STYLES */
 /* ==================== */
 
 .filter-tooltip {
@@ -1222,7 +1240,7 @@ body {
     margin-left: 8px;
     color: var(--primary-color);
     cursor: help;
-    z-index: 1000;
+    z-index: 100;
 }
 
 .filter-tooltip i {
@@ -1234,7 +1252,6 @@ body {
     color: var(--primary-dark);
 }
 
-/* Подсказка позиционируется относительно окна браузера */
 .filter-tooltip .tooltip-content {
     position: fixed;
     background: var(--secondary-color);
@@ -1247,7 +1264,7 @@ body {
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
-    z-index: 10050; /* Очень высокий z-index */
+    z-index: 1000;
     box-shadow: var(--shadow-hover);
     pointer-events: none;
     text-align: left;
@@ -1281,130 +1298,6 @@ body {
     transform: translateY(-50%) translateX(0);
 }
 
-/* ==================== */
-/* FIX FILTERS CONTAINER - CRITICAL */
-/* ==================== */
-
-.filters__main {
-    background: var(--white);
-    padding: 25px;
-    border-radius: 15px;
-    box-shadow: var(--shadow);
-    position: sticky;
-    top: 120px;
-    max-height: calc(100vh - 140px);
-    overflow-y: auto;
-    /* ВАЖНО: убираем overflow-x */
-    overflow-x: clip; /* Используем clip вместо visible */
-    z-index: 1000;
-}
-
-.filters__groups {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-    /* Убираем все overflow */
-    overflow: visible;
-    position: relative;
-}
-
-.filter-group {
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 20px;
-    /* Убираем все overflow */
-    overflow: visible;
-    position: relative;
-}
-
-.filter-group:last-child {
-    border-bottom: none;
-}
-
-.filter-group h3 {
-    font-family: 'Yanone Kaffeesatz', sans-serif;
-    font-size: 20px;
-    margin-bottom: 15px;
-    color: var(--secondary-color);
-}
-
-.filter-options {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    /* Убираем все overflow */
-    overflow: visible;
-    position: relative;
-}
-
-.filter-checkbox {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    cursor: pointer;
-    padding: 8px 0;
-    transition: color 0.3s ease;
-    position: relative;
-    /* Убираем все overflow */
-    overflow: visible;
-}
-
-.filter-checkbox:hover {
-    color: var(--primary-color);
-}
-
-.filter-checkbox input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--primary-color);
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-
-.filter-checkbox span {
-    flex: 1;
-    line-height: 1.4;
-}
-
-/* Альтернативное решение с JavaScript позиционированием */
-.filter-tooltip.dynamic-tooltip .tooltip-content {
-    position: fixed;
-    z-index: 10050;
-}
-
-/* Для мобильных устройств */
-@media (max-width: 768px) {
-    .filters__main {
-        position: static;
-        max-height: none;
-        overflow: visible;
-    }
-    
-    .filter-tooltip .tooltip-content {
-        position: fixed;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) scale(0.9);
-        width: 90%;
-        max-width: 300px;
-        z-index: 10050;
-    }
-    
-    .filter-tooltip:hover .tooltip-content {
-        transform: translate(-50%, -50%) scale(1);
-    }
-    
-    .filter-tooltip .tooltip-content::after {
-        display: none;
-    }
-}
-
-@media (max-width: 480px) {
-    .filter-tooltip .tooltip-content {
-        width: 95%;
-        font-size: 11px;
-        padding: 10px 12px;
-    }
-}
 /* ==================== */
 /* SORTING STYLES */
 /* ==================== */
@@ -2516,6 +2409,25 @@ select:focus {
 }
 
 /* ==================== */
+/* FIXED MOBILE FILTERS OVERLAY */
+/* ==================== */
+
+.filters__overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    display: none;
+}
+
+.filters__overlay.active {
+    display: block;
+}
+
+/* ==================== */
 /* RESPONSIVE DESIGN */
 /* ==================== */
 
@@ -2672,13 +2584,21 @@ select:focus {
     }
     
     .filters__main {
-        position: static;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 300px;
+        height: 100vh;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
         max-height: none;
-        display: none;
+        border-radius: 0;
+        display: block;
     }
     
     .filters__main.active {
-        display: block;
+        transform: translateX(0);
     }
     
     #toggleFilters {
