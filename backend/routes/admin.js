@@ -30,7 +30,26 @@ router.get('/test', (req, res) => {
 router.post('/products', (req, res) => {
   const items = readJson(productsFile);
   const id = Date.now().toString();
-  const item = Object.assign({}, req.body, { id });
+  // Преобразуем некоторые поля к массиву, если они не пустые строки
+  const body = { ...req.body };
+  if (body.characteristics) {
+    if (Array.isArray(body.characteristics['Исполнение'])) {
+      // ok
+    } else if (typeof body.characteristics['Исполнение'] === 'string' && body.characteristics['Исполнение']) {
+      body.characteristics['Исполнение'] = [body.characteristics['Исполнение']];
+    }
+    if (Array.isArray(body.characteristics['Измеряемые материалы и среды'])) {
+      // ok
+    } else if (typeof body.characteristics['Измеряемые материалы и среды'] === 'string' && body.characteristics['Измеряемые материалы и среды']) {
+      body.characteristics['Измеряемые материалы и среды'] = [body.characteristics['Измеряемые материалы и среды']];
+    }
+    if (Array.isArray(body.characteristics['Особенности применения'])) {
+      // ok
+    } else if (typeof body.characteristics['Особенности применения'] === 'string' && body.characteristics['Особенности применения']) {
+      body.characteristics['Особенности применения'] = [body.characteristics['Особенности применения']];
+    }
+  }
+  const item = Object.assign({}, body, { id });
   items.push(item);
   writeJson(productsFile, items);
   res.status(201).json(item);
@@ -41,7 +60,26 @@ router.put('/products/:id', (req, res) => {
   const id = String(req.params.id);
   const idx = items.findIndex(i => String(i.id) === id);
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  items[idx] = Object.assign({}, items[idx], req.body, { id: items[idx].id });
+  // Преобразуем некоторые поля к массиву, если они не пустые строки
+  const body = { ...req.body };
+  if (body.characteristics) {
+    if (Array.isArray(body.characteristics['Исполнение'])) {
+      // ok
+    } else if (typeof body.characteristics['Исполнение'] === 'string' && body.characteristics['Исполнение']) {
+      body.characteristics['Исполнение'] = [body.characteristics['Исполнение']];
+    }
+    if (Array.isArray(body.characteristics['Измеряемые материалы и среды'])) {
+      // ok
+    } else if (typeof body.characteristics['Измеряемые материалы и среды'] === 'string' && body.characteristics['Измеряемые материалы и среды']) {
+      body.characteristics['Измеряемые материалы и среды'] = [body.characteristics['Измеряемые материалы и среды']];
+    }
+    if (Array.isArray(body.characteristics['Особенности применения'])) {
+      // ok
+    } else if (typeof body.characteristics['Особенности применения'] === 'string' && body.characteristics['Особенности применения']) {
+      body.characteristics['Особенности применения'] = [body.characteristics['Особенности применения']];
+    }
+  }
+  items[idx] = Object.assign({}, items[idx], body, { id: items[idx].id });
   writeJson(productsFile, items);
   res.json(items[idx]);
 });

@@ -99,52 +99,131 @@
             </div>
             
             <div class="form-group">
-              <label>URL изображения:</label>
-              <input name="photo" placeholder="https://static.tildacdn.com/.../image.png">
+              <label>URL(ы) изображений (через запятую или с новой строки):</label>
+              <textarea name="photos" placeholder="https://site.com/img1.jpg, https://site.com/img2.jpg" rows="2"></textarea>
             </div>
             
             <div class="form-section-inner">
               <h4>Характеристики</h4>
-              <div class="form-row">
+              <div class="filters-grid">
                 <div class="form-group">
                   <label>Показатель визирования:</label>
                   <input name="characteristics_visibility" placeholder="40:1">
                 </div>
+
                 <div class="form-group">
                   <label>Диапазон температур:</label>
                   <input name="characteristics_temperature_range" placeholder="200-1200°С">
                 </div>
-              </div>
-              
-              <div class="form-row">
+
                 <div class="form-group">
-                  <label>Погрешность:</label>
-                  <input name="characteristics_accuracy" placeholder="0.01">
+                  <label>Точность:</label>
+                  <select name="characteristics_accuracy">
+                    <option value="обычная (±1%)">Обычная (±1%)</option>
+                    <option value="повышенная (±0,5%)">Повышенная (±0,5%)</option>
+                  </select>
                 </div>
+
                 <div class="form-group">
-                  <label>Спектральный диапазон:</label>
-                  <input name="characteristics_spectral_range" placeholder="0,9-4,5 мкм">
+                  <label>Быстродействие:</label>
+                  <select name="characteristics_speed">
+                    <option value="стандартное (0,3 с)">Стандартное (0,3 с)</option>
+                    <option value="быстродействующий (50 мс)">Быстродействующий (50 мс)</option>
+                    <option value="скоростной (12 мс)">Скоростной (12 мс)</option>
+                  </select>
                 </div>
-              </div>
-              
-              <div class="form-group">
-                <label>Принцип действия:</label>
-                <input name="characteristics_principle" placeholder="Энергетический (яркостной)">
-              </div>
-              
-              <div class="form-group">
-                <label>Измеряемые материалы:</label>
-                <input name="characteristics_materials" placeholder="Al и его сплавы">
-              </div>
-              
-              <div class="form-row">
+
+                <div class="form-group">
+                  <label>Исполнение:</label>
+                  <select name="characteristics_design" multiple size="4">
+                    <option value="переносной">Переносной</option>
+                    <option value="базовый комплект">Базовый комплект</option>
+                    <option value="с матобработкой">С матобработкой</option>
+                    <option value="с памятью на 510 результатов">С памятью на 510 результатов</option>
+                    <option value="стационарный">Стационарный</option>
+                    <option value="токовый выход 0-20 мА">Токовый выход 0-20 мА</option>
+                    <option value="токовый выход 4-20 мА">Токовый выход 4-20 мА</option>
+                    <option value="с выходом на СОМ-порт">С выходом на СОМ-порт</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Устройство визирования:</label>
+                  <select name="characteristics_sight">
+                    <option value="прицельная планка">Прицельная планка</option>
+                    <option value="лазерный квазибеспараллаксный">Лазерный квазибеспараллаксный</option>
+                    <option value="оптический беспараллаксный">Оптический беспараллаксный</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Внесен в Госреестр:</label>
+                  <select name="characteristics_registry">
+                    <option value="внесен">Внесен</option>
+                    <option value="не внесен">Не внесен</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Для малоразмерных объектов:</label>
+                  <select name="characteristics_small_objects">
+                    <option value="позволяет">Позволяет</option>
+                    <option value="не позволяет">Не позволяет</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Принцип действия:</label>
+                  <select name="characteristics_principle">
+                    <option value="энергетический (яркостной)">Энергетический (яркостной)</option>
+                    <option value="энергетический (радиационный)">Энергетический (радиационный)</option>
+                    <option value="спектрального отношения">Спектрального отношения</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Измеряемые материалы и среды:</label>
+                  <div class="multi-select-wrapper">
+                    <select name="characteristics_materials" multiple size="7">
+                      <option value="железо, сталь">Железо, сталь</option>
+                      <option value="алюминий и сплавы">Алюминий и сплавы</option>
+                      <option value="цветные металлы (кроме Al) и сплавы">Цветные металлы (кроме Al) и сплавы</option>
+                      <option value="благородные металлы и сплавы">Благородные металлы и сплавы</option>
+                      <option value="керамика, огнеупоры">Керамика, огнеупоры</option>
+                      <option value="полимеры">Полимеры</option>
+                      <option value="пламя">Пламя</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Особенности применения:</label>
+                  <div class="multi-select-wrapper">
+                    <select name="characteristics_features" multiple size="7">
+                      <option value="для вакуумных печей с кварцевым окном">Для вакуумных печей с кварцевым окном</option>
+                      <option value="для вакуумных печей со стеклянным окном">Для вакуумных печей со стеклянным окном</option>
+                      <option value="для нагревательных печей">Для нагревательных печей</option>
+                      <option value="для прокатных станов">Для прокатных станов</option>
+                      <option value="для лабораторных исследований">Для лабораторных исследований</option>
+                      <option value="для работы при t > 50°C">Для работы при t > 50°C</option>
+                      <option value="для измерений через пламя">Для измерений через пламя</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div class="form-group">
                   <label>Температура мин:</label>
                   <input name="characteristics_temperature_min" placeholder="200">
                 </div>
+
                 <div class="form-group">
                   <label>Температура макс:</label>
                   <input name="characteristics_temperature_max" placeholder="1200">
+                </div>
+
+                <div class="form-group">
+                  <label>Описание товара:</label>
+                  <textarea name="description" placeholder="Описание товара..." rows="4"></textarea>
                 </div>
               </div>
             </div>

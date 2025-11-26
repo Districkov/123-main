@@ -466,6 +466,77 @@ button {
   }
 }
 
+/* Additional styles for admin filter controls (selects, multi-selects) */
+.form-group select,
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dfe4ee;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+  color: #222;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-group select:focus,
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 6px 18px rgba(102,126,234,0.08);
+}
+
+/* Style for multi-select boxes used for characteristics */
+select[multiple],
+.form-group select[multiple] {
+  min-height: 140px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 8px 10px;
+}
+
+/* Make long lists inside multi-select clearer */
+select[multiple] option {
+  padding: 6px 8px;
+}
+
+/* Two-column layout for filters area in admin */
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px 24px;
+  align-items: start;
+}
+
+/* Responsive fallback */
+@media (max-width: 900px) {
+  .filters-grid { grid-template-columns: 1fr; }
+}
+
+/* Label improvements */
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Small helper for select placeholders */
+.select-empty {
+  color: #9aa3b2;
+}
+
+/* Small spacing for multi-select containers */
+.multi-select-wrapper {
+  border: 1px solid #eef1f6;
+  padding: 6px;
+  border-radius: 6px;
+  background: #fff;
+}
+
 /* Admin Popup Styles */
 .admin-popup {
   display: none;
@@ -643,6 +714,32 @@ button {
   object-fit: cover;
 }
 
+/* Additional admin styles: improve form controls and image previews */
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea, .token-input {
+  border-radius: 6px;
+  padding: 10px 12px;
+  border: 1px solid #dfe4ee;
+}
+
+.item-image.preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #eef1f6;
+}
+
+.admin .actions-row {
+  display:flex;gap:8px;align-items:center;
+}
+
+/* Responsive spacing for admin forms */
+@media (min-width: 992px) {
+  .ajax-form { max-width: 800px; }
+}
+
 .item-sku, .item-meta {
   display: block;
   font-size: 0.85rem;
@@ -725,4 +822,36 @@ button {
   #change-password-section h2 {
     font-size: 1.1rem;
   }
+}
+
+/* Photos preview inside admin product popup */
+.photos-preview {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.photos-preview__item {
+  width: 120px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #eef1f6;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.photos-preview__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transition: transform 0.15s ease;
+}
+.photos-preview__item a { display:block; width:100%; height:100%; }
+.photos-preview__empty {
+  color: #6c757d;
+  font-size: 13px;
 }

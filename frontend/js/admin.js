@@ -37,6 +37,17 @@ function showMessage(message, type = 'success') {
   }, 3000);
 }
 
+// Prevent default navigation for any AJAX forms as a safety net
+document.addEventListener('submit', (e) => {
+  try {
+    if (e.target && e.target.classList && e.target.classList.contains('ajax-form')) {
+      e.preventDefault();
+    }
+  } catch (err) {
+    // ignore
+  }
+});
+
 function authHeaders() {
   if (!isAuthenticated) {
     throw new Error('Не авторизован');
@@ -226,16 +237,27 @@ function renderProducts(products) {
     return;
   }
 
-  el.innerHTML = products.map(p => `
+  el.innerHTML = products.map(p => {
+    // Галерея изображений
+    let images = '';
+    if (Array.isArray(p.photos) && p.photos.length) {
+      images = p.photos.map(url => `<img src="${url}" alt="${p.title}" onerror="this.src='./images/no-image.jpg'" style="max-width:40px;max-height:40px;margin-right:2px;">`).join('');
+    } else if (p.photo) {
+      images = `<img src="${p.photo}" alt="${p.title}" onerror="this.src='./images/no-image.jpg'" style="max-width:40px;max-height:40px;">`;
+    } else {
+      images = `<img src="./images/no-image.jpg" alt="${p.title}" style="max-width:40px;max-height:40px;">`;
+    }
+    // Артикулы
+    let sku = Array.isArray(p.sku) ? p.sku.join(', ') : (p.sku || 'Не указан');
+    return `
     <div class="item" data-id="${p.id}">
       <div class="item-content">
         <div class="item-image">
-          <img src="${p.photo || './images/no-image.jpg'}" alt="${p.title}" 
-               onerror="this.src='./images/no-image.jpg'">
+          ${images}
         </div>
         <div class="item-info">
           <strong>${p.title || 'Без названия'}</strong>
-          <span class="item-sku">Артикул: ${p.sku || 'Не указан'}</span>
+          <span class="item-sku">Артикул: ${sku}</span>
           <span class="item-category">Категория: ${p.category || 'Не указана'}</span>
           <span class="item-price">${p.price ? `${parseFloat(p.price).toLocaleString('ru-RU')} ₽` : 'Цена не указана'}</span>
           <p class="item-description">${p.characteristics ? Object.entries(p.characteristics).slice(0, 2).map(([key, value]) => `${key}: ${value}`).join(', ') : 'Характеристики отсутствуют'}</p>
@@ -246,7 +268,8 @@ function renderProducts(products) {
         </div>
       </div>
     </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 async function deleteProduct(id) {
@@ -261,7 +284,12 @@ async function deleteProduct(id) {
       }),
       'Товар удален'
     );
-    loadProducts();
+    await loadProducts();
+    try {
+      localStorage.setItem('products-updated', Date.now().toString());
+    } catch (e) {
+      console.warn('Could not write products-updated to localStorage', e);
+    }
   } catch (error) {}
 }
 
@@ -269,26 +297,74 @@ function openProductPopup(product = null) {
   const popup = document.getElementById('product-popup');
   const form = document.getElementById('product-form-popup');
   const title = document.getElementById('product-popup-title');
-  
   if (product) {
     title.textContent = 'Редактировать товар';
     form.id.value = product.id;
-    form.sku.value = product.sku || '';
+    // Поддержка массива артикулов
+    if (Array.isArray(product.sku)) {
+      form.sku.value = product.sku.join(', ');
+    } else {
+      form.sku.value = product.sku || '';
+    }
     form.category.value = product.category || '';
     form.title.value = product.title || '';
-    form.photo.value = product.photo || '';
+    // Поддержка массива изображений
+    if (form.photos) {
+      let photos = product.photos || product.photo || '';
+      if (Array.isArray(photos)) {
+        form.photos.value = photos.join(', ');
+      } else {
+        form.photos.value = photos;
+      }
+    }
+    // Update inline preview for images in the popup
+    updatePhotoPreview(form);
     form.price.value = product.price || '';
     form.quantity.value = product.quantity || 1;
-    
+    // Характеристики
     form.characteristics_visibility.value = product.characteristics?.['Показатель визирования'] || '';
     form.characteristics_temperature_range.value = product.characteristics?.['Диапазон измерений температуры'] || '';
-    form.characteristics_accuracy.value = product.characteristics?.['Погрешность'] || '';
-    form.characteristics_spectral_range.value = product.characteristics?.['Спектральный диапазон'] || '';
-    form.characteristics_principle.value = product.characteristics?.['Принцип действия'] || '';
-    form.characteristics_materials.value = product.characteristics?.['Измеряемые материалы'] || '';
+    // Точность (селект)
+    if (form.characteristics_accuracy) form.characteristics_accuracy.value = product.characteristics?.['Точность'] || '';
+    // Быстродействие (селект)
+    if (form.characteristics_speed) form.characteristics_speed.value = product.characteristics?.['Быстродействие'] || '';
+    // Исполнение (множественный выбор)
+    if (form.characteristics_design) {
+      let values = product.characteristics?.['Исполнение'] || [];
+      if (typeof values === 'string' && values) values = [values];
+      Array.from(form.characteristics_design.options).forEach(opt => {
+        opt.selected = Array.isArray(values) ? values.includes(opt.value) : values === opt.value;
+      });
+    }
+    // Устройство визирования (селект)
+    if (form.characteristics_sight) form.characteristics_sight.value = product.characteristics?.['Устройство визирования'] || '';
+    // Внесен в Госреестр (селект)
+    if (form.characteristics_registry) form.characteristics_registry.value = product.characteristics?.['Госреестр'] || '';
+    // Для малоразмерных объектов (селект)
+    if (form.characteristics_small_objects) form.characteristics_small_objects.value = product.characteristics?.['Малоразмерные объекты'] || '';
+    // Принцип действия (селект)
+    if (form.characteristics_principle) form.characteristics_principle.value = product.characteristics?.['Принцип действия'] || '';
+    // Материалы (множественный выбор)
+    if (form.characteristics_materials) {
+      let values = product.characteristics?.['Измеряемые материалы и среды'] || [];
+      if (typeof values === 'string' && values) values = [values];
+      Array.from(form.characteristics_materials.options).forEach(opt => {
+        opt.selected = Array.isArray(values) ? values.includes(opt.value) : values === opt.value;
+      });
+    }
+    // Особенности применения (множественный выбор)
+    if (form.characteristics_features) {
+      let values = product.characteristics?.['Особенности применения'] || [];
+      if (typeof values === 'string' && values) values = [values];
+      Array.from(form.characteristics_features.options).forEach(opt => {
+        opt.selected = Array.isArray(values) ? values.includes(opt.value) : values === opt.value;
+      });
+    }
     form.characteristics_temperature_min.value = product.characteristics?.['Температура мин'] || '';
     form.characteristics_temperature_max.value = product.characteristics?.['Температура макс'] || '';
-    
+    // Описание
+    if (form.description) form.description.value = product.description || '';
+    // SEO
     form.seo_title.value = product.seo?.title || '';
     form.seo_description.value = product.seo?.description || '';
     form.seo_keywords.value = product.seo?.keywords || '';
@@ -297,7 +373,6 @@ function openProductPopup(product = null) {
     form.reset();
     form.id.value = '';
   }
-  
   popup.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
@@ -511,20 +586,35 @@ function initPopupHandlers() {
       }
       
       const form = e.target;
-      const body = { 
-        sku: form.sku.value,
+      // Множественный выбор для материалов и особенностей применения
+      function getMultiSelectValues(sel) {
+        return sel ? Array.from(sel.selectedOptions).map(opt => opt.value) : [];
+      }
+      // Массив изображений
+      let photos = form.photos && form.photos.value ? form.photos.value.split(/[\n,]+/).map(s => s.trim()).filter(Boolean) : [];
+      // Массив артикулов
+      let sku = form.sku && form.sku.value ? form.sku.value.split(/[\n,]+/).map(s => s.trim()).filter(Boolean) : [];
+      if (sku.length === 1) sku = sku[0];
+      const body = {
+        sku: sku,
         category: form.category.value,
         title: form.title.value,
-        photo: form.photo.value,
+        photos: photos,
         price: parseFloat(form.price.value) || 0,
         quantity: parseInt(form.quantity.value) || 1,
+        description: form.description ? form.description.value : '',
         characteristics: {
           'Показатель визирования': form.characteristics_visibility.value,
           'Диапазон измерений температуры': form.characteristics_temperature_range.value,
-          'Погрешность': form.characteristics_accuracy.value,
-          'Спектральный диапазон': form.characteristics_spectral_range.value,
-          'Принцип действия': form.characteristics_principle.value,
-          'Измеряемые материалы': form.characteristics_materials.value,
+          'Точность': form.characteristics_accuracy ? form.characteristics_accuracy.value : '',
+          'Быстродействие': form.characteristics_speed ? form.characteristics_speed.value : '',
+          'Исполнение': getMultiSelectValues(form.characteristics_design),
+          'Устройство визирования': form.characteristics_sight ? form.characteristics_sight.value : '',
+          'Госреестр': form.characteristics_registry ? form.characteristics_registry.value : '',
+          'Малоразмерные объекты': form.characteristics_small_objects ? form.characteristics_small_objects.value : '',
+          'Принцип действия': form.characteristics_principle ? form.characteristics_principle.value : '',
+          'Измеряемые материалы и среды': getMultiSelectValues(form.characteristics_materials),
+          'Особенности применения': getMultiSelectValues(form.characteristics_features),
           'Температура мин': form.characteristics_temperature_min.value,
           'Температура макс': form.characteristics_temperature_max.value
         },
@@ -560,8 +650,22 @@ function initPopupHandlers() {
         }
         closeProductPopup();
         loadProducts();
+        try {
+          // notify other tabs (catalog) that products changed
+          // include id so catalog can scroll/highlight the updated item
+          const updatedId = form.id.value || body.id || null;
+          const payload = { ts: Date.now(), id: updatedId };
+          localStorage.setItem('products-updated', JSON.stringify(payload));
+          console.log('admin: products-updated written', payload);
+        } catch (e) {
+          console.warn('Could not write products-updated to localStorage', e);
+        }
       } catch (error) {}
     });
+    // Live preview when photos textarea changes
+    if (productFormPopup.photos) {
+      productFormPopup.photos.addEventListener('input', () => updatePhotoPreview(productFormPopup));
+    }
   }
 
   if (articleFormPopup) {
@@ -615,6 +719,12 @@ function initPopupHandlers() {
         }
         closeArticlePopup();
         loadArticles();
+        try {
+          localStorage.setItem('articles-updated', Date.now().toString());
+          console.log('admin: articles-updated written');
+        } catch (e) {
+          console.warn('Could not write articles-updated to localStorage', e);
+        }
       } catch (error) {}
     });
   }
@@ -653,6 +763,64 @@ function updateStats() {
   
   document.getElementById('products-count').textContent = productsCount;
   document.getElementById('articles-count').textContent = articlesCount;
+}
+
+// Photo preview helper for admin product popup
+function updatePhotoPreview(form) {
+  if (!form) return;
+  let photosValue = form.photos ? form.photos.value : '';
+  const containerClass = 'photos-preview';
+  let preview = form.querySelector('.' + containerClass);
+  if (!preview) {
+    preview = document.createElement('div');
+    preview.className = containerClass;
+    // insert after photos textarea
+    if (form.photos && form.photos.parentNode) {
+      form.photos.parentNode.insertBefore(preview, form.photos.nextSibling);
+    } else {
+      form.appendChild(preview);
+    }
+  }
+
+  const urls = photosValue ? photosValue.split(/[,\n]+/).map(s => s.trim()).filter(Boolean) : [];
+  if (urls.length === 0) {
+    preview.innerHTML = '<div class="photos-preview__empty">Нет указанных изображений</div>';
+    return;
+  }
+
+  preview.innerHTML = urls.map((url, idx) => {
+    const safe = url.replace(/"/g, '&quot;');
+    return `
+      <div class="photos-preview__item" data-idx="${idx}">
+        <a href="${safe}" target="_blank" rel="noopener noreferrer">
+          <img src="${safe}" alt="preview-${idx}" onerror="this.src='./images/no-image.jpg'">
+        </a>
+      </div>
+    `;
+  }).join('');
+
+  // upscale small previews visually if needed
+  preview.querySelectorAll('img').forEach(img => {
+    img.style.objectFit = 'contain';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.display = 'block';
+    img.addEventListener('load', () => {
+      try {
+        const naturalW = img.naturalWidth || 0;
+        const naturalH = img.naturalHeight || 0;
+        const parent = img.parentElement || img;
+        const rect = parent.getBoundingClientRect();
+        const contW = rect.width || 1;
+        const contH = rect.height || 1;
+        const scaleW = contW / Math.max(naturalW, 1);
+        const scaleH = contH / Math.max(naturalH, 1);
+        const scale = Math.max(1, Math.min(scaleW, scaleH));
+        if (scale > 1.01) img.style.transform = `scale(${scale.toFixed(3)})`;
+        else img.style.transform = '';
+      } catch (e) {}
+    });
+  });
 }
 
 // Auto-save token in localStorage

@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const header = document.querySelector('.header');
     
     function updateHeader() {
+        if (!header) return;
         if (window.scrollY > 50) {
             header.classList.add('scrolled');
         } else {
@@ -23,17 +24,22 @@ document.addEventListener('DOMContentLoaded', function() {
     let slideInterval;
 
     function showSlide(n) {
+        if (!slides || slides.length === 0) return;
         slides.forEach(slide => {
-            slide.classList.remove('active');
-            slide.style.opacity = '0';
+            if (slide && slide.classList) {
+                slide.classList.remove('active');
+                slide.style.opacity = '0';
+            }
         });
-        indicators.forEach(indicator => indicator.classList.remove('active'));
+        if (indicators && indicators.length) indicators.forEach(indicator => indicator.classList.remove('active'));
         
         currentSlide = (n + slides.length) % slides.length;
-        
-        slides[currentSlide].classList.add('active');
-        slides[currentSlide].style.opacity = '1';
-        indicators[currentSlide].classList.add('active');
+        const s = slides[currentSlide];
+        if (s && s.classList) {
+            s.classList.add('active');
+            s.style.opacity = '1';
+        }
+        if (indicators && indicators[currentSlide] && indicators[currentSlide].classList) indicators[currentSlide].classList.add('active');
     }
 
     function nextSlide() {
@@ -41,12 +47,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function startSlider() {
+        if (!slides || slides.length === 0) return;
         slides.forEach((slide, index) => {
-            if (index === 0) {
-                slide.style.opacity = '1';
-            } else {
-                slide.style.opacity = '0';
-            }
+            try {
+                slide.style.opacity = index === 0 ? '1' : '0';
+            } catch (e) {}
         });
         
         slideInterval = setInterval(nextSlide, 4000);
@@ -97,8 +102,9 @@ document.addEventListener('DOMContentLoaded', function() {
         ymaps.ready(initMap);
     } else {
         console.error('Yandex Maps API не загружен');
-        // Fallback - показываем статичную карту
-        document.getElementById('map').innerHTML = `
+        // Fallback - показываем статичную карту (только если элемент существует)
+        const mapEl = document.getElementById('map');
+        if (mapEl) mapEl.innerHTML = `
             <div style="width:100%;height:100%;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);display:flex;align-items:center;justify-content:center;color:white;font-family:Arial,sans-serif;border-radius:15px;">
                 <div style="text-align:center;padding:20px;">
                     <i class="fas fa-map-marker-alt" style="font-size:48px;margin-bottom:15px;"></i>
@@ -152,8 +158,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('Ошибка инициализации карты:', error);
-            // Fallback
-            document.getElementById('map').innerHTML = `
+            // Fallback (только если элемент существует)
+            const mapEl = document.getElementById('map');
+            if (mapEl) mapEl.innerHTML = `
                 <div style="width:100%;height:100%;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);display:flex;align-items:center;justify-content:center;color:white;font-family:Arial,sans-serif;border-radius:15px;">
                     <div style="text-align:center;padding:20px;">
                         <i class="fas fa-map-marker-alt" style="font-size:48px;margin-bottom:15px;"></i>
