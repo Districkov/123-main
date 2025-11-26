@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'service_0su0smw',
                     'template_hqq0w8l',
                     {
-                        to_email: 'perometer@inbox.ru',
+                        to_email: ' pyrometer@inbox.ru',
                         from_name: formData.name,
                         from_email: formData.email,
                         products: formData.products,

@@ -1,4 +1,4 @@
-// catalog.js - Исправленная версия с правильным путем
+// catalog.js - Версия без закрепленного фильтра и подсказок
 class CatalogManager {
     async loadProducts(force = false) {
         // force — для cache-bust при обновлении
@@ -120,7 +120,6 @@ class CatalogManager {
         this.productsPerPage = 6;
     }
 
-    // Все остальные методы остаются без изменений из вашей рабочей версии
     initTemperatureSlider() {
         const tempMin = document.getElementById('tempMin');
         const tempMax = document.getElementById('tempMax');
@@ -139,11 +138,9 @@ class CatalogManager {
             const min = parseInt(tempMin.value);
             const max = parseInt(tempMax.value);
             
-            // Update display values
             minValue.textContent = min + '°C';
             maxValue.textContent = max + '°C';
             
-            // Update input fields
             tempMinInput.value = min;
             tempMaxInput.value = max;
             
@@ -164,14 +161,12 @@ class CatalogManager {
                 #ddd ${maxPercent}%, 
                 #ddd 100%)`;
             
-            // Ensure min doesn't exceed max
             if (min >= max) {
                 tempMin.value = max - 50;
                 updateSlider();
             }
         };
 
-        // Event listeners for sliders
         tempMin.addEventListener('input', () => {
             updateSlider();
             this.applyTemperatureFilter();
@@ -188,7 +183,6 @@ class CatalogManager {
             this.applyTemperatureFilter();
         });
 
-        // Event listeners for input fields
         tempMinInput.addEventListener('input', function() {
             let value = parseInt(this.value);
             if (isNaN(value)) value = 0;
@@ -234,7 +228,6 @@ class CatalogManager {
     }
 
     setupEventListeners() {
-        // Чекбоксы фильтров
         document.querySelectorAll('.filter-checkbox input').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 const filterType = e.target.getAttribute('data-filter');
@@ -251,31 +244,26 @@ class CatalogManager {
             });
         });
 
-        // Поиск
         document.getElementById('searchInput').addEventListener('input', debounce((e) => {
             this.searchQuery = e.target.value.toLowerCase();
             this.currentPage = 1;
             this.applyFilters();
         }, 300));
 
-        // Сортировка
         document.getElementById('sortSelect').addEventListener('change', (e) => {
             this.sortBy = e.target.value;
             this.currentPage = 1;
             this.applyFilters();
         });
 
-        // Сброс фильтров
         document.getElementById('resetFilters').addEventListener('click', () => {
             this.resetFilters();
         });
 
-        // Мобильные фильтры
         document.getElementById('toggleFilters').addEventListener('click', () => {
             this.toggleMobileFilters();
         });
 
-        // Закрытие мобильных фильтров
         document.addEventListener('click', (e) => {
             const filtersMain = document.querySelector('.filters__main');
             const toggleBtn = document.getElementById('toggleFilters');
@@ -288,7 +276,6 @@ class CatalogManager {
             }
         });
 
-        // Закрытие попапа продукта
         document.querySelector('.product-popup__close').addEventListener('click', () => {
             this.closeProductPopup();
         });
@@ -297,14 +284,12 @@ class CatalogManager {
             this.closeProductPopup();
         });
 
-        // Закрытие по ESC
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.closeProductPopup();
             }
         });
 
-        // Пагинация
         document.addEventListener('click', (e) => {
             if (e.target.closest('.pagination__number')) {
                 const page = parseInt(e.target.closest('.pagination__number').dataset.page);
@@ -320,7 +305,6 @@ class CatalogManager {
     applyFilters() {
         try { console.log('applyFilters start', { currentFilters: this.currentFilters, searchQuery: this.searchQuery, sortBy: this.sortBy, currentPage: this.currentPage }); } catch(e){}
         let filtered = this.products.filter(product => {
-            // Поиск
             if (this.searchQuery) {
                 const searchStr = `${product.title} ${product.sku} ${product.description} ${product.category}`.toLowerCase();
                 if (!searchStr.includes(this.searchQuery)) {
@@ -328,7 +312,6 @@ class CatalogManager {
                 }
             }
 
-            // Фильтры по характеристикам
             for (const [filterType, selectedValues] of Object.entries(this.currentFilters)) {
                 if (selectedValues.length > 0) {
                     if (filterType === 'temperature') {
@@ -377,9 +360,7 @@ class CatalogManager {
             return true;
         });
 
-        // Сортировка
         filtered = this.sortProducts(filtered);
-
         this.filteredProducts = filtered;
         this.renderProducts();
         this.updateResultsCount();
@@ -392,8 +373,6 @@ class CatalogManager {
             const [min, max] = range.split('-').map(Number);
             const productMin = product.characteristics.температураМин;
             const productMax = product.characteristics.температураМакс;
-            
-            // Проверяем пересечение диапазонов
             return productMin <= max && productMax >= min;
         });
     }
@@ -426,16 +405,13 @@ class CatalogManager {
             checkbox.checked = false;
         });
 
-        // Сброс ползунка температуры
         document.getElementById('tempMin').value = 0;
         document.getElementById('tempMax').value = 3000;
         this.initTemperatureSlider();
 
-        // Сброс поиска и сортировки
         document.getElementById('searchInput').value = '';
         document.getElementById('sortSelect').value = 'popular';
 
-        // Сброс состояния
         this.currentFilters = {
             temperature: [],
             визирование: [],
@@ -612,40 +588,35 @@ class CatalogManager {
         
         paginationElement.style.display = 'flex';
         
-        // Кнопки назад/вперед
         document.getElementById('prevPage').disabled = this.currentPage === 1;
         document.getElementById('nextPage').disabled = this.currentPage === totalPages;
         
-        // Номера страниц
         const numbersContainer = document.getElementById('paginationNumbers');
         numbersContainer.innerHTML = '';
         
         // Всегда показываем первую страницу
-        if (totalPages > 0) {
-            this.createPageNumber(1, numbersContainer);
-        }
+        this.createPageNumber(1, numbersContainer);
         
-        // Показываем многоточие если нужно
-        if (this.currentPage > 3) {
+        // Определяем диапазон для 5 центральных страниц
+        let startPage = Math.max(2, this.currentPage - 2);
+        let endPage = Math.min(totalPages - 1, this.currentPage + 2);
+        
+        // Добавляем многоточие после первой страницы, если есть разрыв
+        if (startPage > 2) {
             this.createEllipsis(numbersContainer);
         }
         
-        // Показываем текущую страницу и соседние
-        const startPage = Math.max(2, this.currentPage - 1);
-        const endPage = Math.min(totalPages - 1, this.currentPage + 1);
-        
+        // Добавляем центральные страницы (5 штук)
         for (let i = startPage; i <= endPage; i++) {
-            if (i > 1 && i < totalPages) {
-                this.createPageNumber(i, numbersContainer);
-            }
+            this.createPageNumber(i, numbersContainer);
         }
         
-        // Показываем многоточие если нужно
-        if (this.currentPage < totalPages - 2) {
+        // Добавляем многоточие перед последней страницей, если есть разрыв
+        if (endPage < totalPages - 1) {
             this.createEllipsis(numbersContainer);
         }
         
-        // Всегда показываем последнюю страницу если есть больше 1 страницы
+        // Всегда показываем последнюю страницу (если она не первая)
         if (totalPages > 1) {
             this.createPageNumber(totalPages, numbersContainer);
         }
@@ -671,7 +642,6 @@ class CatalogManager {
         this.renderProducts();
         this.renderPagination();
         this.updateResultsCount();
-        // Прокрутка к верху каталога
         document.getElementById('catalogGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -1102,7 +1072,6 @@ function openChatWithProduct(productName, productSku) {
         productInput.value = `${productName} (${productSku})`;
     }
     
-    // Закрываем попап продукта если открыт
     if (catalog && catalog.currentProduct) {
         catalog.closeProductPopup();
     }
@@ -1119,7 +1088,6 @@ function openChat() {
     
     popup.classList.add('active');
     
-    // Добавляем обработчик для закрытия при клике вне попапа
     setTimeout(() => {
         const closeHandler = function(e) {
             if (!popup.contains(e.target) && !e.target.closest('.chat-widget__button')) {
@@ -1131,7 +1099,6 @@ function openChat() {
     }, 100);
 }
 
-// Утилиты
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -1201,7 +1168,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const messageDiv = document.getElementById('form-message');
             const chatPopup = document.querySelector('.chat-widget__popup');
             
-            // Показываем индикатор загрузки
             const originalText = submitButton.textContent;
             submitButton.disabled = true;
             submitButton.textContent = 'Отправка...';
@@ -1219,23 +1185,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     date: new Date().toLocaleString('ru-RU')
                 };
 
-                // Валидация
                 if (!formData.name || !formData.email || !formData.products) {
                     throw new Error('Пожалуйста, заполните все обязательные поля');
                 }
 
-                // Проверка email
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(formData.email)) {
                     throw new Error('Пожалуйста, введите корректный email');
                 }
 
-                // EmailJS отправка
                 const response = await emailjs.send(
                     'service_0su0smw',
                     'template_hqq0w8l',
                     {
-                        to_email: 'perometer@inbox.ru',
+                        to_email: ' pyrometer@inbox.ru',
                         from_name: formData.name,
                         from_email: formData.email,
                         products: formData.products,
@@ -1251,7 +1214,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     this.reset();
                     
-                    // Автоматически закрываем попап через 3 секунды
                     setTimeout(() => {
                         if (chatPopup) chatPopup.classList.remove('active');
                     }, 3000);
@@ -1282,7 +1244,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Предотвращаем закрытие попапа при клике на контент
     document.querySelector('.product-popup__content').addEventListener('click', (e) => {
         e.stopPropagation();
     });
