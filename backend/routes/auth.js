@@ -5,6 +5,23 @@ const router = express.Router();
 
 const dataPath = path.join(__dirname, '..', 'data');
 
+// Multer for file uploads
+const multer = require('multer');
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+const productsUploadDir = path.join(uploadsDir, 'products');
+if (!fs.existsSync(productsUploadDir)) fs.mkdirSync(productsUploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, productsUploadDir);
+  },
+  filename: function (req, file, cb) {
+    const safeName = Date.now() + '-' + file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    cb(null, safeName);
+  }
+});
+const upload = multer({ storage });
+
 // Helper functions для работы с JSON файлами
 function readJSONFile(filename) {
   try {
@@ -61,6 +78,25 @@ router.post('/products', (req, res) => {
     res.status(201).json(newProduct);
   } else {
     res.status(500).json({ error: 'Failed to save product' });
+  }
+});
+
+// FILE UPLOAD endpoint for product images
+// Field name: "files" (multiple)
+router.post('/upload', upload.array('files', 10), (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+    const files = req.files.map(f => ({
+      filename: f.filename,
+      originalname: f.originalname,
+      url: `/uploads/products/${f.filename}`
+    }));
+    res.json({ files });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Upload failed', details: error.message });
   }
 });
 

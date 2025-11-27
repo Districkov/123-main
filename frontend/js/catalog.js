@@ -508,11 +508,6 @@ class CatalogManager {
             if (mainImg) {
                 images += `<img class="main-image" src="${mainImg}" alt="${product.title}" onerror="this.style.display='none'; this.parentElement.querySelector('.product-card__no-image').style.display='flex';" />`;
             }
-            if (Array.isArray(product.photos) && product.photos.length && product.photos.length > 1) {
-                images += `<div class="product-card__thumbs">` + product.photos.map((url, idx) => `
-                    <img class="thumb" data-index="${idx}" src="${url}" alt="${product.title} - ${idx+1}" onerror="this.style.display='none';" />
-                `).join('') + `</div>`;
-            }
             let sku = Array.isArray(product.sku) ? product.sku.join(', ') : (product.sku || 'Не указан');
             return `
             <div class="product-card" data-id="${product.id}">

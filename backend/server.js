@@ -128,6 +128,9 @@ app.use('/admin', requireAdminToken, require('./routes/admin'));
 // Auth routes (require auth)
 app.use('/auth', requireAdminToken, require('./routes/auth'));
 
+// Serve uploaded files (images) from backend/uploads at /uploads
+app.use('/uploads', express.static(path.join(backendRoot, 'uploads')));
+
 // Статические файлы
 app.use(express.static(frontendPath));
 

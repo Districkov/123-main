@@ -335,11 +335,10 @@ function openProductPopup(product = null) {
     if (form.characteristics_speed) form.characteristics_speed.value = product.characteristics?.['Быстродействие'] || '';
     // Исполнение (множественный выбор)
     if (form.characteristics_design) {
-      let values = product.characteristics?.['Исполнение'] || [];
-      if (typeof values === 'string' && values) values = [values];
-      Array.from(form.characteristics_design.options).forEach(opt => {
-        opt.selected = Array.isArray(values) ? values.includes(opt.value) : values === opt.value;
-      });
+      // now single-select: pick first value if array, otherwise take string
+      const raw = product.characteristics?.['Исполнение'];
+      if (Array.isArray(raw)) form.characteristics_design.value = raw[0] || '';
+      else form.characteristics_design.value = raw || '';
     }
     // Устройство визирования (селект)
     if (form.characteristics_sight) form.characteristics_sight.value = product.characteristics?.['Устройство визирования'] || '';
@@ -351,19 +350,15 @@ function openProductPopup(product = null) {
     if (form.characteristics_principle) form.characteristics_principle.value = product.characteristics?.['Принцип действия'] || '';
     // Материалы (множественный выбор)
     if (form.characteristics_materials) {
-      let values = product.characteristics?.['Измеряемые материалы и среды'] || [];
-      if (typeof values === 'string' && values) values = [values];
-      Array.from(form.characteristics_materials.options).forEach(opt => {
-        opt.selected = Array.isArray(values) ? values.includes(opt.value) : values === opt.value;
-      });
+      const raw = product.characteristics?.['Измеряемые материалы и среды'];
+      if (Array.isArray(raw)) form.characteristics_materials.value = raw[0] || '';
+      else form.characteristics_materials.value = raw || '';
     }
     // Особенности применения (множественный выбор)
     if (form.characteristics_features) {
-      let values = product.characteristics?.['Особенности применения'] || [];
-      if (typeof values === 'string' && values) values = [values];
-      Array.from(form.characteristics_features.options).forEach(opt => {
-        opt.selected = Array.isArray(values) ? values.includes(opt.value) : values === opt.value;
-      });
+      const raw = product.characteristics?.['Особенности применения'];
+      if (Array.isArray(raw)) form.characteristics_features.value = raw[0] || '';
+      else form.characteristics_features.value = raw || '';
     }
     form.characteristics_temperature_min.value = product.characteristics?.['Температура мин'] || '';
     form.characteristics_temperature_max.value = product.characteristics?.['Температура макс'] || '';
@@ -380,6 +375,8 @@ function openProductPopup(product = null) {
   }
   popup.classList.add('active');
   document.body.style.overflow = 'hidden';
+  // ensure our compact multi-selects reflect the current select.selected options
+  try { refreshCompactMultiSelects(); } catch (e) {}
 }
 
 function closeProductPopup() {
@@ -388,6 +385,125 @@ function closeProductPopup() {
   document.body.style.overflow = '';
   const form = document.getElementById('product-form-popup');
   form.reset();
+  // refresh compact multi-select UI to reflect reset state
+  try { refreshCompactMultiSelects(); } catch (e) {}
+}
+
+// Compact custom multi-select UI -------------------------------------------------
+function createCompactMultiSelect(select) {
+  if (!select || select.dataset.compactInit === '1') return;
+  select.dataset.compactInit = '1';
+
+  // wrap container
+  const wrapper = document.createElement('div');
+  wrapper.className = 'custom-multiselect';
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'multi-toggle';
+  toggle.setAttribute('aria-haspopup', 'listbox');
+  toggle.setAttribute('aria-expanded', 'false');
+
+  const panel = document.createElement('div');
+  panel.className = 'multi-panel';
+  panel.setAttribute('role', 'listbox');
+
+  // Build checkbox list from select options
+  Array.from(select.options).forEach((opt, idx) => {
+    const row = document.createElement('label');
+    row.className = 'multi-option';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.dataset.optIndex = idx;
+    cb.checked = opt.selected;
+    cb.addEventListener('change', (e) => {
+      const checked = e.target.checked;
+      const i = parseInt(e.target.dataset.optIndex, 10);
+      if (!isNaN(i) && select.options[i]) {
+        select.options[i].selected = checked;
+        // keep underlying select event flow
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      updateToggleLabel(select, wrapper);
+    });
+    const span = document.createElement('span');
+    span.textContent = opt.textContent;
+    row.appendChild(cb);
+    row.appendChild(span);
+    panel.appendChild(row);
+  });
+
+  toggle.addEventListener('click', (e) => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    if (expanded) {
+      closePanel();
+    } else {
+      openPanel();
+    }
+  });
+
+  function openPanel() {
+    panel.classList.add('open');
+    toggle.setAttribute('aria-expanded', 'true');
+    document.addEventListener('click', outsideListener);
+  }
+  function closePanel() {
+    panel.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', outsideListener);
+  }
+  function outsideListener(ev) {
+    if (!wrapper.contains(ev.target)) closePanel();
+  }
+
+  wrapper.appendChild(toggle);
+  wrapper.appendChild(panel);
+
+  // insert after select and hide native select visually but keep it for form
+  select.style.display = 'none';
+  select.parentNode.insertBefore(wrapper, select.nextSibling);
+
+  // helper to update label
+  updateToggleLabel(select, wrapper);
+}
+
+function updateToggleLabel(select, wrapper) {
+  const toggle = wrapper.querySelector('.multi-toggle');
+  const selected = Array.from(select.selectedOptions).map(o => o.textContent.trim()).filter(Boolean);
+  if (!toggle) return;
+  if (selected.length === 0) {
+    toggle.textContent = '— выбрать —';
+    toggle.classList.add('select-empty');
+  } else if (selected.length > 2) {
+    toggle.textContent = `${selected.length} выбрано`;
+    toggle.classList.remove('select-empty');
+  } else {
+    toggle.textContent = selected.join(', ');
+    toggle.classList.remove('select-empty');
+  }
+}
+
+function refreshCompactMultiSelects() {
+  const selects = Array.from(document.querySelectorAll('select[multiple]'));
+  selects.forEach(sel => {
+    // if widget exists, update checkboxes from select.options
+    const wrapper = sel.nextElementSibling && sel.nextElementSibling.classList && sel.nextElementSibling.classList.contains('custom-multiselect') ? sel.nextElementSibling : null;
+    if (wrapper) {
+      const checks = wrapper.querySelectorAll('input[type="checkbox"]');
+      Array.from(checks).forEach(cb => {
+        const idx = parseInt(cb.dataset.optIndex, 10);
+        cb.checked = !!(sel.options[idx] && sel.options[idx].selected);
+      });
+      updateToggleLabel(sel, wrapper);
+    } else {
+      // create new widget
+      createCompactMultiSelect(sel);
+    }
+  });
+}
+
+function initCompactMultiSelects() {
+  try { refreshCompactMultiSelects(); } catch (e) { console.warn('compact multi-select init error', e); }
 }
 
 async function editProduct(id) {
@@ -613,13 +729,13 @@ function initPopupHandlers() {
           'Диапазон измерений температуры': form.characteristics_temperature_range.value,
           'Точность': form.characteristics_accuracy ? form.characteristics_accuracy.value : '',
           'Быстродействие': form.characteristics_speed ? form.characteristics_speed.value : '',
-          'Исполнение': getMultiSelectValues(form.characteristics_design),
+          'Исполнение': form.characteristics_design ? form.characteristics_design.value : '',
           'Устройство визирования': form.characteristics_sight ? form.characteristics_sight.value : '',
           'Госреестр': form.characteristics_registry ? form.characteristics_registry.value : '',
           'Малоразмерные объекты': form.characteristics_small_objects ? form.characteristics_small_objects.value : '',
           'Принцип действия': form.characteristics_principle ? form.characteristics_principle.value : '',
-          'Измеряемые материалы и среды': getMultiSelectValues(form.characteristics_materials),
-          'Особенности применения': getMultiSelectValues(form.characteristics_features),
+          'Измеряемые материалы и среды': form.characteristics_materials ? form.characteristics_materials.value : '',
+          'Особенности применения': form.characteristics_features ? form.characteristics_features.value : '',
           'Температура мин': form.characteristics_temperature_min.value,
           'Температура макс': form.characteristics_temperature_max.value
         },
@@ -673,6 +789,65 @@ function initPopupHandlers() {
     // Live preview when photos textarea changes
     if (productFormPopup.photos) {
       productFormPopup.photos.addEventListener('input', () => updatePhotoPreview(productFormPopup));
+    }
+
+    // File upload input (local images)
+    const photosFileInput = productFormPopup.querySelector('#photos-files');
+    if (photosFileInput) {
+      photosFileInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+
+        const container = photosFileInput.closest('.photos-upload');
+        const filenamesEl = container ? container.querySelector('.upload-filenames') : null;
+        if (filenamesEl) filenamesEl.textContent = files.map(f => f.name).join(', ');
+        if (container) container.classList.add('photos-uploading');
+
+        try {
+          showMessage('Загрузка изображений...', 'info');
+          const fd = new FormData();
+          files.forEach(f => fd.append('files', f));
+
+          // build headers but do not set Content-Type for multipart/form-data
+          let headers = {};
+          try { headers = authHeaders(); } catch (err) { headers = {}; }
+          if (headers['Content-Type']) delete headers['Content-Type'];
+
+          const resp = await fetch('/auth/upload', {
+            method: 'POST',
+            headers: headers,
+            body: fd
+          });
+          if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(txt || 'Upload failed');
+          }
+          const result = await resp.json();
+          const urls = (result.files || []).map(f => {
+            const u = f.url || '';
+            // make absolute when server returns root-relative path
+            if (u.startsWith('/')) return window.location.origin + u;
+            return u;
+          });
+          if (urls.length) {
+            const current = productFormPopup.photos && productFormPopup.photos.value ? productFormPopup.photos.value.trim() + '\n' : '';
+            if (productFormPopup.photos) productFormPopup.photos.value = current + urls.join(', ');
+            updatePhotoPreview(productFormPopup);
+            showMessage('Изображения загружены', 'success');
+            if (filenamesEl) filenamesEl.textContent = 'Загружено: ' + urls.map(u => u.split('/').pop()).join(', ');
+          } else {
+            throw new Error('No URLs returned from upload');
+          }
+        } catch (err) {
+          console.error('File upload error:', err);
+          showMessage('Ошибка при загрузке изображений: ' + (err.message || err), 'error');
+          if (filenamesEl) filenamesEl.textContent = '';
+        } finally {
+          // clear input so same files can be selected again if needed
+          photosFileInput.value = '';
+          if (container) container.classList.remove('photos-uploading');
+        }
+      });
     }
   }
 
@@ -841,6 +1016,51 @@ if (tokenInput) {
   });
 }
 
+// Lightweight: populate visibility and temperature-range selects from products.json
+async function populateCharacteristicSelects() {
+  try {
+    const resp = await fetch('/data/products.json');
+    if (!resp.ok) return;
+    const products = await resp.json();
+
+    const visSet = new Set();
+    const tempSet = new Set();
+
+    products.forEach(p => {
+      const c = p.characteristics || {};
+      const v = c['Показатель визирования'] || c['Показатель визирования (второе)'];
+      const t = c['Диапазон измерений температуры'] || c['Диапазон температур'] || c['Диапазон измерений'];
+      if (v) {
+        if (Array.isArray(v)) v.forEach(x => x && visSet.add(String(x).trim()));
+        else visSet.add(String(v).trim());
+      }
+      if (t) {
+        if (Array.isArray(t)) t.forEach(x => x && tempSet.add(String(x).trim()));
+        else tempSet.add(String(t).trim());
+      }
+    });
+
+    function appendOptions(selectId, set) {
+      const sel = document.getElementById(selectId);
+      if (!sel) return;
+      const existing = new Set(Array.from(sel.options).map(o => o.value));
+      Array.from(set).forEach(v => {
+        if (v && !existing.has(v)) {
+          const opt = document.createElement('option');
+          opt.value = v;
+          opt.textContent = v;
+          sel.appendChild(opt);
+        }
+      });
+    }
+
+    appendOptions('characteristics_visibility', visSet);
+    appendOptions('characteristics_temperature_range', tempSet);
+  } catch (err) {
+    console.warn('populateCharacteristicSelects error', err);
+  }
+}
+
 // Load saved token and initialize
 window.addEventListener('load', async () => {
   const savedToken = localStorage.getItem('admin-token');
@@ -850,5 +1070,8 @@ window.addEventListener('load', async () => {
   
   initPopupHandlers();
   initRefreshButtons();
+  // populate visibility/temperature selects from products.json (best-effort)
+  try { await populateCharacteristicSelects(); } catch (e) {}
+  try { initCompactMultiSelects(); } catch (e) {}
   checkAuth();
 });

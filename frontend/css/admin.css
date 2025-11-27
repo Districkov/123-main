@@ -474,11 +474,14 @@ button {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #dfe4ee;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #fff;
   font-size: 14px;
   color: #222;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
 .form-group select:focus,
@@ -489,6 +492,15 @@ button {
   box-shadow: 0 6px 18px rgba(102,126,234,0.08);
 }
 
+/* Add custom arrow for single selects */
+.form-group select:not([multiple]) {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'><path fill='%23667eea' d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 12px;
+  padding-right: 38px; /* space for arrow */
+}
+
 /* Style for multi-select boxes used for characteristics */
 select[multiple],
 .form-group select[multiple] {
@@ -496,11 +508,30 @@ select[multiple],
   max-height: 320px;
   overflow: auto;
   padding: 8px 10px;
+  /* For multi-selects keep native list, but remove inner borders */
+  background: transparent;
+  border: none;
 }
 
 /* Make long lists inside multi-select clearer */
 select[multiple] option {
   padding: 6px 8px;
+}
+
+/* Ensure multi-select wrapper looks like other controls and contains the select */
+.multi-select-wrapper {
+  border: 1px solid #dfe4ee;
+  padding: 6px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.multi-select-wrapper select {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  font-size: 14px;
 }
 
 /* Two-column layout for filters area in admin */
@@ -521,7 +552,7 @@ select[multiple] option {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #333;
+  color: #000000;
 }
 
 /* Small helper for select placeholders */
@@ -855,3 +886,112 @@ select[multiple] option {
   color: #6c757d;
   font-size: 13px;
 }
+
+/* Upload input + hint styles */
+
+.photos-upload input[type="file"] {
+  /* keep input accessible but hide default control */
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.btn-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #667eea;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  font-size: 0.95rem;
+  margin-top: 6px;
+}
+
+.btn-upload:hover {
+  background: #5a6fd8;
+}
+
+.upload-filenames {
+  display: inline-block;
+  margin-left: 12px;
+  font-size: 0.95rem;
+  color: #495057;
+}
+
+.photos-upload-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+/* Small visual indicator while uploading (applied by JS via class) */
+.photos-uploading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  .photos-preview__item { width: 90px; height: 70px; }
+}
+
+/* Compact custom multi-select styles */
+.custom-multiselect {
+  display: inline-block;
+  position: relative;
+  width: 100%;
+  margin-top: 4px;
+}
+.custom-multiselect .multi-toggle {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #dfe4ee;
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #222;
+}
+.custom-multiselect .multi-toggle.select-empty { color: #9aa3b2; }
+.custom-multiselect .multi-toggle:after {
+  content: '\25BE';
+  float: right;
+  color: #667eea;
+  font-size: 12px;
+}
+.custom-multiselect .multi-panel {
+  display: none;
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: #fff;
+  border: 1px solid #e9eef8;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(102,126,234,0.12);
+  max-height: 220px;
+  overflow: auto;
+  padding: 8px;
+}
+.custom-multiselect .multi-panel.open { display: block; }
+.custom-multiselect .multi-option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.custom-multiselect .multi-option:hover { background: #f5f8ff; }
+.custom-multiselect .multi-option input[type="checkbox"] { margin: 0; }
+.custom-multiselect .multi-option span { font-size: 14px; color: #333; }
+
+/* Make sure native multiple selects inside multi-select-wrapper remain hidden but accessible */
+.multi-select-wrapper select[multiple] { display: none !important; }
