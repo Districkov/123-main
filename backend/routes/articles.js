@@ -6,7 +6,17 @@ const articlesFile = path.join(__dirname, '..', 'data', 'articles.json');
 
 router.get('/', (req, res) => {
   try {
-    const items = JSON.parse(fs.readFileSync(articlesFile, 'utf8') || '[]');
+    let items = JSON.parse(fs.readFileSync(articlesFile, 'utf8') || '[]');
+    const q = req.query.q || req.query.search || '';
+    if (q && String(q).trim()) {
+      const ql = String(q).toLowerCase();
+      items = items.filter(a => {
+        const title = (a.title || '').toString().toLowerCase();
+        const cat = (a.category || '').toString().toLowerCase();
+        const excerpt = (a.excerpt || '').toString().toLowerCase();
+        return title.includes(ql) || cat.includes(ql) || excerpt.includes(ql);
+      });
+    }
     res.json(items);
   } catch(e) { res.json([]); }
 });

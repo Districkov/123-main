@@ -289,6 +289,43 @@ body.unauthorized #auth-message {
   flex-wrap: wrap;
 }
 
+/* Products search and scroll-top */
+.search-wrapper input[type="search"] {
+  padding: 8px 12px;
+  border: 1px solid #dfe4ee;
+  border-radius: 8px;
+  width: 360px;
+  max-width: 40vw;
+}
+
+#scroll-top-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  z-index: 20000;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  border-radius: 8px;
+  background: #ff8a00; /* orange */
+  color: white;
+}
+
+@media (max-width: 640px) {
+  #scroll-top-btn { right: 12px; bottom: 16px; width: 40px; height: 40px; }
+}
+
+#scroll-top-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(255,138,0,0.18);
+}
+
+.actions-row { display:flex; gap:12px; align-items:center; }
+
 /* Buttons */
 button {
   padding: 10px 20px;

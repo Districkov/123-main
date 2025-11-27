@@ -47,8 +47,13 @@
       <section class="section">
         <div class="section-header">
           <h2>Управление товарами</h2>
-          <div style="display: flex; gap: 10px;">
-            <button id="add-product" class="btn-primary">➕ Добавить товар</button>
+          <div class="actions-row">
+            <div class="search-wrapper">
+              <input id="products-search" type="search" placeholder="Поиск по товарам (название, артикул, категория)" aria-label="Поиск по товарам">
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button id="add-product" class="btn-primary">➕ Добавить товар</button>
+            </div>
           </div>
         </div>
         <div id="products-list" class="items-list"></div>
@@ -272,9 +277,13 @@
       <section class="section">
         <div class="section-header">
           <h2>Управление статьями</h2>
-          <div style="display: flex; gap: 10px;">
-            <button id="add-article" class="btn-primary">➕ Добавить статью</button>
-            <button id="refresh-articles" class="btn-secondary">🔄 Обновить</button>
+          <div class="actions-row">
+            <div class="search-wrapper">
+              <input id="articles-search" type="search" placeholder="Поиск по статьям (название, категория)" aria-label="Поиск по статьям">
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button id="add-article" class="btn-primary">➕ Добавить статью</button>
+            </div>
           </div>
         </div>
         <div id="articles-list" class="items-list"></div>
@@ -316,20 +325,18 @@
               <textarea name="excerpt" placeholder="Выбор подходящего пирометра зависит от множества факторов..." rows="3" required></textarea>
             </div>
             
-            <div class="form-row">
-              <div class="form-group">
-                <label>Время чтения:</label>
-                <input name="readTime" placeholder="6 мин чтения">
-              </div>
-              <div class="form-group">
-                <label>Просмотры:</label>
-                <input name="views" placeholder="2.1K просмотров">
-              </div>
-            </div>
+            <!-- Время чтения удалено: теперь статьи не содержат этого поля -->
             
             <div class="form-group">
               <label>URL изображения:</label>
               <input name="image" placeholder="images/product3.jpg">
+            </div>
+            <div class="form-group photos-upload">
+              <label>Загрузить изображение с компьютера:</label>
+              <input type="file" id="article-image-file" name="article_image_file" accept="image/*" aria-label="Выбрать изображение">
+              <label for="article-image-file" class="btn-upload" role="button" aria-controls="article-image-file">📁 Выбрать файл</label>
+              <span class="upload-filenames" aria-live="polite"></span>
+              <div class="photos-upload-hint">Выберите файл — он будет загружен на сервер и URL автоматически вставится в поле изображения.</div>
             </div>
             
             <div class="form-group">
@@ -363,6 +370,8 @@
       </section>
     </div>
   </div>
+  <!-- Fixed scroll-to-top button (edge of the screen) -->
+  <button id="scroll-top-btn" class="btn-secondary" title="Прокрутить вверх">⬆︎</button>
 
   <script src="js/admin.js"></script>
 </body>

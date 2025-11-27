@@ -229,13 +229,21 @@ if (logoutBtn) {
 }
 
 // Products functionality
+let productsCache = [];
+let currentProductFilter = '';
+// Articles functionality cache/filter
+let articlesCache = [];
+let currentArticleFilter = '';
+
 async function loadProducts() {
   try {
     const data = await handleApiCall(
       () => fetch(API + '/products'),
       'Товары загружены'
     );
-    renderProducts(data);
+    // cache products and render (newest first)
+    productsCache = Array.isArray(data) ? data.slice() : [];
+    renderProducts(productsCache);
     updateStats();
   } catch (error) {
     document.getElementById('products-list').innerHTML = 
@@ -250,7 +258,27 @@ function renderProducts(products) {
     return;
   }
 
-  el.innerHTML = products.map(p => {
+  // apply current search filter
+  const filter = (currentProductFilter || '').trim().toLowerCase();
+  let list = Array.from(products);
+  if (filter) {
+    list = list.filter(p => {
+      const title = (p.title || '').toLowerCase();
+      const sku = (Array.isArray(p.sku) ? p.sku.join(' ') : (p.sku || '')).toLowerCase();
+      const cat = (p.category || '').toLowerCase();
+      const desc = (p.description || '').toLowerCase();
+      return title.includes(filter) || sku.includes(filter) || cat.includes(filter) || desc.includes(filter);
+    });
+  }
+
+  // sort newest-first by numeric id when possible (ids created by Date.now())
+  list.sort((a,b) => {
+    const ai = Number(a.id) || 0;
+    const bi = Number(b.id) || 0;
+    return bi - ai;
+  });
+
+  el.innerHTML = list.map(p => {
     // Галерея изображений
     let images = '';
     if (Array.isArray(p.photos) && p.photos.length) {
@@ -531,7 +559,8 @@ async function loadArticles() {
       () => fetch(API + '/articles'),
       'Статьи загружены'
     );
-    renderArticles(data);
+    articlesCache = Array.isArray(data) ? data.slice() : [];
+    renderArticles(articlesCache);
     updateStats();
   } catch (error) {
     document.getElementById('articles-list').innerHTML = 
@@ -546,7 +575,26 @@ function renderArticles(articles) {
     return;
   }
 
-  el.innerHTML = articles.map(a => `
+  // apply current search filter
+  const filter = (currentArticleFilter || '').trim().toLowerCase();
+  let list = Array.from(articles);
+  if (filter) {
+    list = list.filter(a => {
+      const title = (a.title || '').toLowerCase();
+      const cat = (a.category || '').toLowerCase();
+      const excerpt = (a.excerpt || '').toLowerCase();
+      return title.includes(filter) || cat.includes(filter) || excerpt.includes(filter);
+    });
+  }
+
+  // sort newest-first by numeric id
+  list.sort((a,b) => {
+    const ai = Number(a.id) || 0;
+    const bi = Number(b.id) || 0;
+    return bi - ai;
+  });
+
+  el.innerHTML = list.map(a => `
     <div class="item" data-id="${a.id}">
       <div class="item-content">
         <div class="item-image">
@@ -598,9 +646,7 @@ function openArticlePopup(article = null) {
     form.excerpt.value = article.excerpt || '';
     form.image.value = article.image || '';
     form.date.value = article.date || '';
-    form.readTime.value = article.readTime || '';
-    form.views.value = article.views || '';
-    
+
     if (article.content && article.content.length > 0) {
       const firstParagraph = article.content.find(item => item.type === 'paragraph');
       form.content.value = firstParagraph ? firstParagraph.text : '';
@@ -690,6 +736,32 @@ function initPopupHandlers() {
 
   if (cancelArticlePopupBtn) {
     cancelArticlePopupBtn.addEventListener('click', closeArticlePopup);
+  }
+
+  // products search input
+  const productsSearch = document.getElementById('products-search');
+  if (productsSearch) {
+    productsSearch.addEventListener('input', (e) => {
+      currentProductFilter = e.target.value || '';
+      renderProducts(productsCache);
+    });
+  }
+
+  // articles search input
+  const articlesSearch = document.getElementById('articles-search');
+  if (articlesSearch) {
+    articlesSearch.addEventListener('input', (e) => {
+      currentArticleFilter = e.target.value || '';
+      renderArticles(articlesCache);
+    });
+  }
+
+  // scroll to top button
+  const scrollTopBtn = document.getElementById('scroll-top-btn');
+  if (scrollTopBtn) {
+    scrollTopBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 
   document.addEventListener('keydown', (e) => {
@@ -889,8 +961,6 @@ function initPopupHandlers() {
         excerpt: form.excerpt.value,
         image: form.image.value,
         date: form.date.value,
-        readTime: form.readTime.value,
-        views: form.views.value,
         content: [
           {
             type: "paragraph",
@@ -935,6 +1005,72 @@ function initPopupHandlers() {
         showMessage('Ошибка при сохранении статьи: ' + (error.message || error), 'error');
       }
     });
+
+    // File upload input for article image (uploads and inserts URL into image field)
+    const articleImageInput = articleFormPopup.querySelector('#article-image-file');
+    if (articleImageInput) {
+      articleImageInput.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (!files.length) return;
+
+        const container = articleImageInput.closest('.photos-upload');
+        const filenamesEl = container ? container.querySelector('.upload-filenames') : null;
+        if (filenamesEl) filenamesEl.textContent = files.map(f => f.name).join(', ');
+        if (container) container.classList.add('photos-uploading');
+
+        try {
+          showMessage('Загрузка изображения...', 'info');
+          const fd = new FormData();
+          files.forEach(f => fd.append('files', f));
+
+          // build headers but do not set Content-Type for multipart/form-data
+          let headers = {};
+          try {
+            headers = authHeaders();
+          } catch (err) {
+            headers = {};
+            const fallbackToken = (localStorage.getItem('admin-token') || (document.getElementById('password') && document.getElementById('password').value) || '').trim();
+            if (fallbackToken) headers['x-admin-token'] = fallbackToken;
+          }
+          if (headers['Content-Type']) delete headers['Content-Type'];
+
+          if (!headers['x-admin-token'] || headers['x-admin-token'].trim() === '') {
+            showMessage('Требуется токен администратора. Введите пароль и нажмите «Войти», либо вставьте токен в поле `token`.', 'error');
+            throw new Error('Missing admin token');
+          }
+
+          const resp = await fetch('/auth/upload', {
+            method: 'POST',
+            headers: headers,
+            body: fd
+          });
+          if (!resp.ok) {
+            const txt = await resp.text();
+            throw new Error(txt || 'Upload failed');
+          }
+          const result = await resp.json();
+          const urls = (result.files || []).map(f => {
+            const u = f.url || '';
+            if (u.startsWith('/')) return window.location.origin + u;
+            return u;
+          });
+          if (urls.length) {
+            if (articleFormPopup.image) articleFormPopup.image.value = urls[0];
+            showMessage('Изображение загружено', 'success');
+            if (filenamesEl) filenamesEl.textContent = 'Загружено: ' + urls.map(u => u.split('/').pop()).join(', ');
+          } else {
+            throw new Error('No URLs returned from upload');
+          }
+        } catch (err) {
+          console.error('Article image upload error:', err);
+          showMessage('Ошибка при загрузке изображения: ' + (err.message || err), 'error');
+          if (filenamesEl) filenamesEl.textContent = '';
+        } finally {
+          articleImageInput.value = '';
+          if (container) container.classList.remove('photos-uploading');
+        }
+      });
+    }
   }
 }
 
