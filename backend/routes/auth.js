@@ -46,37 +46,40 @@ function writeJSONFile(filename, data) {
   }
 }
 
-// Products CRUD
+// Products CRUD (use DB)
+const db = require('../db');
+
 // GET all products
 router.get('/products', (req, res) => {
-  const products = readJSONFile('products.json');
-  res.json(products);
+  try {
+    const q = req.query.q || req.query.search || '';
+    const products = db.getProducts(q);
+    res.json(products);
+  } catch (e) {
+    console.error('auth GET products error:', e);
+    res.status(500).json({ error: 'Failed to read products' });
+  }
 });
 
 // GET product by ID
 router.get('/products/:id', (req, res) => {
-  const products = readJSONFile('products.json');
-  const product = products.find(p => p.id === req.params.id);
-  if (!product) {
-    return res.status(404).json({ error: 'Product not found' });
+  try {
+    const product = db.getProductById(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json(product);
+  } catch (e) {
+    console.error('auth GET product by id error:', e);
+    res.status(500).json({ error: 'Failed to read product' });
   }
-  res.json(product);
 });
 
 // CREATE new product
 router.post('/products', (req, res) => {
-  const products = readJSONFile('products.json');
-  const newProduct = {
-    id: req.body.id || Date.now().toString(),
-    ...req.body,
-    createdAt: new Date().toISOString()
-  };
-  
-  products.push(newProduct);
-  
-  if (writeJSONFile('products.json', products)) {
+  try {
+    const newProduct = db.createProduct(req.body);
     res.status(201).json(newProduct);
-  } else {
+  } catch (e) {
+    console.error('auth POST product error:', e);
     res.status(500).json({ error: 'Failed to save product' });
   }
 });
@@ -102,115 +105,84 @@ router.post('/upload', upload.array('files', 10), (req, res) => {
 
 // UPDATE product
 router.put('/products/:id', (req, res) => {
-  let products = readJSONFile('products.json');
-  const productIndex = products.findIndex(p => p.id === req.params.id);
-  
-  if (productIndex === -1) {
-    return res.status(404).json({ error: 'Product not found' });
-  }
-  
-  products[productIndex] = {
-    ...products[productIndex],
-    ...req.body,
-    updatedAt: new Date().toISOString()
-  };
-  
-  if (writeJSONFile('products.json', products)) {
-    res.json(products[productIndex]);
-  } else {
+  try {
+    const updated = db.updateProduct(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Product not found' });
+    res.json(updated);
+  } catch (e) {
+    console.error('auth PUT product error:', e);
     res.status(500).json({ error: 'Failed to update product' });
   }
 });
 
 // DELETE product
 router.delete('/products/:id', (req, res) => {
-  let products = readJSONFile('products.json');
-  const productIndex = products.findIndex(p => p.id === req.params.id);
-  
-  if (productIndex === -1) {
-    return res.status(404).json({ error: 'Product not found' });
-  }
-  
-  const deletedProduct = products.splice(productIndex, 1)[0];
-  
-  if (writeJSONFile('products.json', products)) {
-    res.json({ message: 'Product deleted successfully', product: deletedProduct });
-  } else {
+  try {
+    const deleted = db.deleteProduct(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Product not found' });
+    res.json({ message: 'Product deleted successfully', product: deleted });
+  } catch (e) {
+    console.error('auth DELETE product error:', e);
     res.status(500).json({ error: 'Failed to delete product' });
   }
 });
 
-// Articles CRUD
+// Articles CRUD (use DB)
 // GET all articles
 router.get('/articles', (req, res) => {
-  const articles = readJSONFile('articles.json');
-  res.json(articles);
+  try {
+    const q = req.query.q || req.query.search || '';
+    const articles = db.getArticles(q);
+    res.json(articles);
+  } catch (e) {
+    console.error('auth GET articles error:', e);
+    res.status(500).json({ error: 'Failed to read articles' });
+  }
 });
 
 // GET article by ID
 router.get('/articles/:id', (req, res) => {
-  const articles = readJSONFile('articles.json');
-  const article = articles.find(a => a.id == req.params.id); // == потому что id может быть числом
-  if (!article) {
-    return res.status(404).json({ error: 'Article not found' });
+  try {
+    const article = db.getArticleById(req.params.id);
+    if (!article) return res.status(404).json({ error: 'Article not found' });
+    res.json(article);
+  } catch (e) {
+    console.error('auth GET article by id error:', e);
+    res.status(500).json({ error: 'Failed to read article' });
   }
-  res.json(article);
 });
 
 // CREATE new article
 router.post('/articles', (req, res) => {
-  const articles = readJSONFile('articles.json');
-  const newArticle = {
-    id: req.body.id || Date.now(),
-    ...req.body,
-    createdAt: new Date().toISOString()
-  };
-  
-  articles.push(newArticle);
-  
-  if (writeJSONFile('articles.json', articles)) {
+  try {
+    const newArticle = db.createArticle(req.body);
     res.status(201).json(newArticle);
-  } else {
+  } catch (e) {
+    console.error('auth POST article error:', e);
     res.status(500).json({ error: 'Failed to save article' });
   }
 });
 
 // UPDATE article
 router.put('/articles/:id', (req, res) => {
-  let articles = readJSONFile('articles.json');
-  const articleIndex = articles.findIndex(a => a.id == req.params.id); // == потому что id может быть числом
-  
-  if (articleIndex === -1) {
-    return res.status(404).json({ error: 'Article not found' });
-  }
-  
-  articles[articleIndex] = {
-    ...articles[articleIndex],
-    ...req.body,
-    updatedAt: new Date().toISOString()
-  };
-  
-  if (writeJSONFile('articles.json', articles)) {
-    res.json(articles[articleIndex]);
-  } else {
+  try {
+    const updated = db.updateArticle(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Article not found' });
+    res.json(updated);
+  } catch (e) {
+    console.error('auth PUT article error:', e);
     res.status(500).json({ error: 'Failed to update article' });
   }
 });
 
 // DELETE article
 router.delete('/articles/:id', (req, res) => {
-  let articles = readJSONFile('articles.json');
-  const articleIndex = articles.findIndex(a => a.id == req.params.id); // == потому что id может быть числом
-  
-  if (articleIndex === -1) {
-    return res.status(404).json({ error: 'Article not found' });
-  }
-  
-  const deletedArticle = articles.splice(articleIndex, 1)[0];
-  
-  if (writeJSONFile('articles.json', articles)) {
-    res.json({ message: 'Article deleted successfully', article: deletedArticle });
-  } else {
+  try {
+    const deleted = db.deleteArticle(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Article not found' });
+    res.json({ message: 'Article deleted successfully', article: deleted });
+  } catch (e) {
+    console.error('auth DELETE article error:', e);
     res.status(500).json({ error: 'Failed to delete article' });
   }
 });

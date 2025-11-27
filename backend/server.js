@@ -24,6 +24,15 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const backendRoot = __dirname;
 const frontendPath = path.join(backendRoot, '..', 'frontend');
 
+// initialize DB (if present)
+try {
+  const db = require('./db');
+  if (db && typeof db.init === 'function') db.init();
+  console.log('Database initialized');
+} catch (e) {
+  console.warn('Database initialization skipped (module missing or error):', e.message || e);
+}
+
 // ФИКСИРОВАННЫЙ ПАРОЛЬ
 const FIXED_ADMIN_PASSWORD = '8uyPRgEmLl';
 
