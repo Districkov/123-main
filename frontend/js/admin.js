@@ -176,6 +176,12 @@ async function attemptLogin() {
     console.log('Server response:', result);
     
     if (result.success) {
+      // if server returned a token, save it and set token input
+      if (result.token) {
+        localStorage.setItem('admin-token', result.token);
+        const tokenEl = document.getElementById('token');
+        if (tokenEl) tokenEl.value = result.token;
+      }
       loginSuccess();
       showMessage('Успешный вход в систему', 'success');
     } else {
@@ -822,6 +828,12 @@ function initPopupHandlers() {
             if (fallbackToken) headers['x-admin-token'] = fallbackToken;
           }
           if (headers['Content-Type']) delete headers['Content-Type'];
+
+          // Ensure we have an admin token before attempting upload to avoid 401 from remote hosts
+          if (!headers['x-admin-token'] || headers['x-admin-token'].trim() === '') {
+            showMessage('Требуется токен администратора. Введите пароль и нажмите «Войти», либо вставьте токен в поле `token`.', 'error');
+            throw new Error('Missing admin token');
+          }
 
           const resp = await fetch('/auth/upload', {
             method: 'POST',

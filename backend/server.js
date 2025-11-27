@@ -87,9 +87,13 @@ app.post('/admin/verify-password', (req, res) => {
     
     if (isValid) {
       console.log('Password verification: SUCCESS');
+      // generate a simple session token (not cryptographically critical here)
+      const crypto = require('crypto');
+      const token = crypto.randomBytes(20).toString('hex');
       res.json({
         success: true,
-        message: 'Авторизация успешна'
+        message: 'Авторизация успешна',
+        token: token
       });
     } else {
       console.log('Password verification: FAILED');
