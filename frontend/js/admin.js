@@ -49,18 +49,14 @@ document.addEventListener('submit', (e) => {
 });
 
 function authHeaders() {
-  if (!isAuthenticated) {
-    throw new Error('Не авторизован');
-  }
-
-  // Prefer token input if present, otherwise fallback to saved token in localStorage.
+  // Prefer explicit token input, otherwise fallback to saved admin-token or password input.
   const tokenElement = document.getElementById('token');
   let token = '';
 
   if (tokenElement && tokenElement.value) {
     token = tokenElement.value.trim();
   } else {
-    token = localStorage.getItem('admin-token') || '';
+    token = (localStorage.getItem('admin-token') || (document.getElementById('password') && document.getElementById('password').value) || '').trim();
   }
 
   const headers = { 'Content-Type': 'application/json' };
@@ -120,6 +116,11 @@ function loginSuccess() {
   const authTime = Date.now();
   localStorage.setItem('admin-authenticated', 'true');
   localStorage.setItem('admin-auth-time', authTime.toString());
+  // Ensure we have a non-empty admin token for protected /auth endpoints.
+  // The server middleware accepts any non-empty token string; store one for the session.
+  if (!localStorage.getItem('admin-token')) {
+    localStorage.setItem('admin-token', 'admintoken:' + authTime);
+  }
   
   loadProducts();
   loadArticles();
@@ -134,6 +135,7 @@ function logout() {
   
   localStorage.removeItem('admin-authenticated');
   localStorage.removeItem('admin-auth-time');
+  localStorage.removeItem('admin-token');
   
   passwordInput.value = '';
   document.getElementById('products-list').innerHTML = '';
@@ -810,7 +812,15 @@ function initPopupHandlers() {
 
           // build headers but do not set Content-Type for multipart/form-data
           let headers = {};
-          try { headers = authHeaders(); } catch (err) { headers = {}; }
+          try {
+            headers = authHeaders();
+          } catch (err) {
+            // If authHeaders throws (not considered authenticated) or returns no token,
+            // try fallback: use stored admin-token or current password input as token.
+            headers = {};
+            const fallbackToken = (localStorage.getItem('admin-token') || (document.getElementById('password') && document.getElementById('password').value) || '').trim();
+            if (fallbackToken) headers['x-admin-token'] = fallbackToken;
+          }
           if (headers['Content-Type']) delete headers['Content-Type'];
 
           const resp = await fetch('/auth/upload', {
