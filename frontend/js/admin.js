@@ -52,22 +52,20 @@ function authHeaders() {
   if (!isAuthenticated) {
     throw new Error('Не авторизован');
   }
-  
+
+  // Prefer token input if present, otherwise fallback to saved token in localStorage.
   const tokenElement = document.getElementById('token');
   let token = '';
-  
-  if (tokenElement) {
+
+  if (tokenElement && tokenElement.value) {
     token = tokenElement.value.trim();
+  } else {
+    token = localStorage.getItem('admin-token') || '';
   }
-  
-  if (!token) {
-    throw new Error('Токен администратора не указан');
-  }
-  
-  return { 
-    'Content-Type': 'application/json', 
-    'x-admin-token': token
-  };
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['x-admin-token'] = token;
+  return headers;
 }
 
 async function handleApiCall(apiCall, successMessage) {
@@ -193,27 +191,34 @@ async function attemptLogin() {
 }
 
 // Login functionality
-loginBtn.addEventListener('click', attemptLogin);
+if (loginBtn) loginBtn.addEventListener('click', attemptLogin);
 
 // Enter key for login
-passwordInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    attemptLogin();
-  }
-});
+if (passwordInput) {
+  passwordInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      attemptLogin();
+    }
+  });
+}
 
 // Token visibility toggle
-toggleTokenBtn.addEventListener('click', () => {
-  const type = tokenInput.type === 'password' ? 'text' : 'password';
-  tokenInput.type = type;
-  toggleTokenBtn.textContent = type === 'password' ? '👁' : '👁‍🗨';
-});
+if (toggleTokenBtn) {
+  toggleTokenBtn.addEventListener('click', () => {
+    if (!tokenInput) return;
+    const type = tokenInput.type === 'password' ? 'text' : 'password';
+    tokenInput.type = type;
+    toggleTokenBtn.textContent = type === 'password' ? '👁' : '👁‍🗨';
+  });
+}
 
 // Logout functionality
-logoutBtn.addEventListener('click', () => {
-  logout();
-  showMessage('Вы вышли из системы', 'info');
-});
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', () => {
+    logout();
+    showMessage('Вы вышли из системы', 'info');
+  });
+}
 
 // Products functionality
 async function loadProducts() {
@@ -660,7 +665,10 @@ function initPopupHandlers() {
         } catch (e) {
           console.warn('Could not write products-updated to localStorage', e);
         }
-      } catch (error) {}
+      } catch (error) {
+        console.error('Error saving product:', error);
+        showMessage('Ошибка при сохранении товара: ' + (error.message || error), 'error');
+      }
     });
     // Live preview when photos textarea changes
     if (productFormPopup.photos) {
@@ -725,7 +733,10 @@ function initPopupHandlers() {
         } catch (e) {
           console.warn('Could not write articles-updated to localStorage', e);
         }
-      } catch (error) {}
+      } catch (error) {
+        console.error('Error saving article:', error);
+        showMessage('Ошибка при сохранении статьи: ' + (error.message || error), 'error');
+      }
     });
   }
 }
@@ -824,15 +835,17 @@ function updatePhotoPreview(form) {
 }
 
 // Auto-save token in localStorage
-tokenInput.addEventListener('change', () => {
-  localStorage.setItem('admin-token', tokenInput.value);
-});
+if (tokenInput) {
+  tokenInput.addEventListener('change', () => {
+    localStorage.setItem('admin-token', tokenInput.value);
+  });
+}
 
 // Load saved token and initialize
 window.addEventListener('load', async () => {
   const savedToken = localStorage.getItem('admin-token');
   if (savedToken) {
-    tokenInput.value = savedToken;
+    if (tokenInput) tokenInput.value = savedToken;
   }
   
   initPopupHandlers();
