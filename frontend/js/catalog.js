@@ -1,5 +1,88 @@
 // catalog.js - Версия без закрепленного фильтра и подсказок
 class CatalogManager {
+    async loadProducts(force = false) {
+        // force — для cache-bust при обновлении
+        let url = '/api/products';
+        if (force) url += '?_=' + Date.now();
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Ошибка загрузки товаров');
+            const data = await res.json();
+            const raw = Array.isArray(data) ? data : [];
+            // keep raw copy for debugging/inspection
+            // Нормализуем продукты под формат, ожидаемый рендерером
+            this.products = raw.map(r => this.normalizeProduct(r));
+            // Reset paging and filtered set
+            this.currentPage = 1;
+            this.filteredProducts = [...this.products];
+            this.renderProducts();
+            this.updateResultsCount();
+            this.renderPagination();
+            this.hideLoading();
+            this.rawProducts = raw;
+        } catch (e) {
+            console.error('Ошибка загрузки товаров:', e);
+            this.products = [];
+            this.filteredProducts = [];
+            this.renderProducts();
+            this.updateResultsCount();
+            this.hideLoading();
+        }
+    }
+
+    showDebug() {
+        // create or update a small debug panel inside results header
+        let debug = document.getElementById('catalogDebug');
+        const header = document.querySelector('.results__header');
+        if (!header) return;
+        if (!debug) {
+            debug = document.createElement('div');
+            debug.id = 'catalogDebug';
+            debug.style.cssText = 'font-size:12px;color:#444;margin-left:16px;background:#fff;padding:8px;border-radius:8px;border:1px solid #eee;max-width:480px;overflow:auto;';
+            header.appendChild(debug);
+        }
+        const totalRaw = Array.isArray(this.rawProducts) ? this.rawProducts.length : 0;
+        const firstRaw = (this.rawProducts && this.rawProducts[0]) ? Object.keys(this.rawProducts[0]).slice(0,10) : [];
+        const firstNorm = (this.products && this.products[0]) ? Object.keys(this.products[0]).slice(0,10) : [];
+        debug.innerHTML = `<strong>Debug:</strong> raw=${totalRaw} products | raw keys: ${firstRaw.join(', ')} | normalized keys: ${firstNorm.join(', ')}`;
+    }
+
+    normalizeProduct(rawProduct) {
+        const ch = rawProduct.characteristics || {};
+        const getArr = (val) => {
+            if (!val) return [];
+            if (Array.isArray(val)) return val;
+            return String(val).split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+        };
+        const photos = rawProduct.photos && rawProduct.photos.length ? rawProduct.photos : (rawProduct.photo ? [rawProduct.photo] : []);
+        const sku = rawProduct.sku;
+        return {
+            id: rawProduct.id || (rawProduct._id || Date.now().toString()),
+            sku: Array.isArray(sku) ? sku : (sku ? String(sku) : ''),
+            category: rawProduct.category || '',
+            title: rawProduct.title || '',
+            description: rawProduct.description || rawProduct.desc || rawProduct.text || rawProduct['Описание'] || '',
+            image: photos.length ? photos[0] : (rawProduct.image || ''),
+            photos: photos,
+            price: rawProduct.price || 0,
+            characteristics: {
+                диапазон: ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['Диапазон измерений'] || ch['диапазон'] || '',
+                погрешность: ch['Погрешность'] || ch['погрешность'] || '',
+                визирование: ch['Показатель визирования'] || ch['Показатель визирования (второе)'] || ch['показатель визирования'] || '',
+                принципДействия: ch['Принцип действия'] || ch['принцип действия'] || '',
+                спектральныйДиапазон: ch['Спектральный диапазон'] || ch['спектральный диапазон'] || '',
+                'Измеряемые материалы и среды': ch['Измеряемые материалы и среды'] || ch['Измеряемые материалы'] || ch['материалы'] || getArr(ch['Измеряемые материалы']) ,
+                исполнение: ch['Исполнение'] || ch['исполнение'] || getArr(ch['Исполнение']),
+                быстродействие: ch['Быстродействие'] || ch['быстродействие'] || '',
+                точность: ch['Точность'] || ch['точность'] || '',
+                устройствоВизирования: ch['Устройство визирования'] || ch['устройство визирования'] || '',
+                госреестр: (String(ch['Госреестр'] || ch['госреестр'] || '')).toLowerCase().includes('да') ? 'да' : (String(ch['Госреестр'] || ch['госреестр'] || '') ? ch['Госреестр'] : ''),
+                дляМалыхОбъектов: ch['Для малых объектов'] || ch['Малоразмерные объекты'] || ch['Малоразмерные объекты'] || '',
+                температураМин: parseInt(ch['Температура мин']) || parseInt(ch['температура мин']) || 0,
+                температураМакс: parseInt(ch['Температура макс']) || parseInt(ch['температура макс']) || 0
+            }
+        };
+    }
     constructor() {
         this.products = [];
         this.filteredProducts = [];
@@ -16,76 +99,25 @@ class CatalogManager {
             устройствоВизирования: [],
             госреестр: []
         };
+        // Map UI filter keys (data-filter values) to normalized characteristic keys
+        this.filterKeyMap = {
+            'материалы': 'Измеряемые материалы и среды',
+            'визирование': 'визирование',
+            'погрешность': 'погрешность',
+            'спектральныйДиапазон': 'спектральныйДиапазон',
+            'принципДействия': 'принципДействия',
+            'исполнение': 'исполнение',
+            'быстродействие': 'быстродействие',
+            'точность': 'точность',
+            'устройствоВизирования': 'устройствоВизирования',
+            'госреестр': 'госреестр',
+            'temperature': 'temperature'
+        };
         this.searchQuery = '';
-        this.sortBy = 'name_asc';
+        this.sortBy = 'popular';
         this.currentProduct = null;
         this.currentPage = 1;
         this.productsPerPage = 6;
-        
-        this.init();
-    }
-
-    async init() {
-        await this.loadProducts();
-        this.initTemperatureSlider();
-        this.renderProducts();
-        this.setupEventListeners();
-        this.hideLoading();
-        this.updateResultsCount();
-        this.renderPagination();
-        // Убрана инициализация подсказок
-    }
-
-    // Убраны методы initStickyFilter() и initTooltips()
-
-    async loadProducts() {
-        try {
-            const response = await fetch('./data/products.json');
-            
-            if (!response.ok) {
-                throw new Error('Failed to load products');
-            }
-            
-            const rawProducts = await response.json();
-            
-            this.products = rawProducts.map(product => this.transformProductData(product));
-            this.filteredProducts = [...this.products];
-            
-            console.log(`Загружено ${this.products.length} продуктов`);
-            
-        } catch (error) {
-            console.error('Error loading products:', error);
-            this.products = [];
-            this.filteredProducts = [];
-        }
-    }
-
-    transformProductData(rawProduct) {
-        return {
-            id: rawProduct.id || '',
-            sku: rawProduct.sku || '',
-            category: rawProduct.category || '',
-            title: rawProduct.title || '',
-            description: rawProduct.description || '',
-            image: rawProduct.photo || '',
-            price: rawProduct.price || 0,
-            characteristics: {
-                визирование: rawProduct.characteristics?.["Показатель визирования"] || '',
-                диапазон: rawProduct.characteristics?.["Диапазон измерений температуры"] || '',
-                погрешность: rawProduct.characteristics?.["Погрешность"] || '',
-                спектральныйДиапазон: rawProduct.characteristics?.["Спектральный диапазон"] || '',
-                принципДействия: rawProduct.characteristics?.["Принцип действия"] || '',
-                материалы: rawProduct.characteristics?.["Измеряемые материалы"] || '',
-                исполнение: rawProduct.characteristics?.["Исполнение"] || '',
-                быстродействие: rawProduct.characteristics?.["Быстродействие"] || '',
-                точность: rawProduct.characteristics?.["Точность"] || '',
-                устройствоВизирования: rawProduct.characteristics?.["Устройство визирования"] || '',
-                госреестр: rawProduct.characteristics?.["Госреестр"] || '',
-                дляМалыхОбъектов: rawProduct.characteristics?.["Для малых объектов"] || '',
-                температураМин: parseInt(rawProduct.characteristics?.["Температура мин"]) || 0,
-                температураМакс: parseInt(rawProduct.characteristics?.["Температура макс"]) || 0
-            }
-        };
     }
 
     initTemperatureSlider() {
@@ -99,6 +131,9 @@ class CatalogManager {
 
         if (!tempMin || !tempMax) return;
 
+        const initialMax = 3000;
+        const extendedMax = 3800;
+
         const updateSlider = () => {
             const min = parseInt(tempMin.value);
             const max = parseInt(tempMax.value);
@@ -109,8 +144,11 @@ class CatalogManager {
             tempMinInput.value = min;
             tempMaxInput.value = max;
             
-            const minPercent = (min / 3000) * 100;
-            const maxPercent = (max / 3000) * 100;
+            // Update track gradient - полный градиент от синего к красному
+            // choose denominator depending on whether we are extended
+            const denom = (parseInt(tempMax.max) || initialMax);
+            const minPercent = (min / denom) * 100;
+            const maxPercent = (max / denom) * 100;
             
             rangeTrack.style.background = `linear-gradient(90deg, 
                 #ddd 0%, 
@@ -134,6 +172,13 @@ class CatalogManager {
             this.applyTemperatureFilter();
         });
         tempMax.addEventListener('input', () => {
+            // If user moved right handle to current max, enable optional extension
+            if (parseInt(tempMax.value) >= parseInt(tempMax.max) && parseInt(tempMax.max) === initialMax) {
+                tempMin.max = extendedMax;
+                tempMax.max = extendedMax;
+                tempMaxInput.max = extendedMax;
+                // keep current value (was equal to initialMax)
+            }
             updateSlider();
             this.applyTemperatureFilter();
         });
@@ -142,7 +187,9 @@ class CatalogManager {
             let value = parseInt(this.value);
             if (isNaN(value)) value = 0;
             if (value < 0) value = 0;
-            if (value > 3000) value = 3000;
+            // respect extended max if available
+            const maxAllowed = parseInt(tempMin.max) || initialMax;
+            if (value > maxAllowed) value = maxAllowed;
             if (value >= parseInt(tempMax.value)) value = parseInt(tempMax.value) - 50;
             tempMin.value = value;
             updateSlider();
@@ -153,15 +200,21 @@ class CatalogManager {
             let value = parseInt(this.value);
             if (isNaN(value)) value = 3000;
             if (value < 0) value = 0;
-            if (value > 3000) value = 3000;
+            // respect extended max if available
+            const maxAllowed = parseInt(tempMax.max) || initialMax;
+            if (value > maxAllowed) value = maxAllowed;
             if (value <= parseInt(tempMin.value)) value = parseInt(tempMin.value) + 50;
             tempMax.value = value;
             updateSlider();
             catalog.applyTemperatureFilter();
         });
 
+        // Initialize slider with full (base) range
         tempMin.value = 0;
-        tempMax.value = 3000;
+        tempMax.value = initialMax;
+        tempMin.max = initialMax;
+        tempMax.max = initialMax;
+        tempMaxInput.max = initialMax;
         updateSlider();
     }
 
@@ -250,6 +303,7 @@ class CatalogManager {
     }
 
     applyFilters() {
+        try { console.log('applyFilters start', { currentFilters: this.currentFilters, searchQuery: this.searchQuery, sortBy: this.sortBy, currentPage: this.currentPage }); } catch(e){}
         let filtered = this.products.filter(product => {
             if (this.searchQuery) {
                 const searchStr = `${product.title} ${product.sku} ${product.description} ${product.category}`.toLowerCase();
@@ -264,15 +318,41 @@ class CatalogManager {
                         if (!this.checkTemperatureFilter(product, selectedValues)) {
                             return false;
                         }
+                    } else if (filterType === 'визирование') {
+                        // selectedValues may include viz_small, viz_medium, viz_large
+                        const pv = product.characteristics['визирование'] || product.characteristics['Показатель визирования'] || '';
+                        const m = String(pv).match(/(\d+(?:\.\d+)?)/);
+                        const num = m ? parseFloat(m[1]) : NaN;
+                        const matchesViz = selectedValues.some(sel => {
+                            if (sel === 'viz_small') return !isNaN(num) && num >= 5 && num <= 20;
+                            if (sel === 'viz_medium') return !isNaN(num) && num > 20 && num <= 100;
+                            if (sel === 'viz_large') return !isNaN(num) && num > 100;
+                            // fallback: substring match
+                            return String(pv).toLowerCase().includes(String(sel).toLowerCase());
+                        });
+                        if (!matchesViz) return false;
                     } else if (filterType === 'госреестр') {
                         if (product.characteristics[filterType] !== 'да') {
                             return false;
                         }
                     } else {
-                        const productValue = product.characteristics[filterType];
-                        if (!selectedValues.includes(productValue)) {
-                            return false;
-                        }
+                            const mappedKey = this.filterKeyMap[filterType] || filterType;
+                            const productValue = product.characteristics[mappedKey];
+                            // If the product value is an array, check any overlap using substring matching
+                            const matchesSelected = (val) => {
+                                if (val === null || val === undefined) return false;
+                                const valStr = String(val).toLowerCase();
+                                return selectedValues.some(sel => valStr.includes(String(sel).toLowerCase()));
+                            };
+
+                            if (Array.isArray(productValue)) {
+                                const has = productValue.some(pv => matchesSelected(pv));
+                                if (!has) return false;
+                            } else {
+                                if (!matchesSelected(productValue)) {
+                                    return false;
+                                }
+                            }
                     }
                 }
             }
@@ -285,6 +365,7 @@ class CatalogManager {
         this.renderProducts();
         this.updateResultsCount();
         this.renderPagination();
+        try { console.log('applyFilters end: filteredCount=', this.filteredProducts.length); } catch(e){}
     }
 
     checkTemperatureFilter(product, selectedRanges) {
@@ -318,6 +399,8 @@ class CatalogManager {
     }
 
     resetFilters() {
+        try { console.log('resetFilters called — clearing UI and internal state'); } catch (e) {}
+        // Сброс чекбоксов
         document.querySelectorAll('.filter-checkbox input').forEach(checkbox => {
             checkbox.checked = false;
         });
@@ -327,7 +410,7 @@ class CatalogManager {
         this.initTemperatureSlider();
 
         document.getElementById('searchInput').value = '';
-        document.getElementById('sortSelect').value = 'name_asc';
+        document.getElementById('sortSelect').value = 'popular';
 
         this.currentFilters = {
             temperature: [],
@@ -343,13 +426,15 @@ class CatalogManager {
             госреестр: []
         };
         this.searchQuery = '';
-        this.sortBy = 'name_asc';
+        this.sortBy = 'popular';
         this.currentPage = 1;
 
         this.filteredProducts = [...this.products];
         this.renderProducts();
         this.updateResultsCount();
         this.renderPagination();
+        // remove any stored filter state if present
+        try { localStorage.removeItem('catalog-filters'); } catch (e) {}
     }
 
     toggleMobileFilters() {
@@ -393,7 +478,6 @@ class CatalogManager {
     renderProducts() {
         const grid = document.getElementById('catalogGrid');
         const paginatedProducts = this.getPaginatedProducts();
-        
         if (this.filteredProducts.length === 0) {
             grid.innerHTML = `
                 <div class="catalog__empty">
@@ -405,18 +489,31 @@ class CatalogManager {
             `;
             return;
         }
-
         grid.innerHTML = paginatedProducts.map(product => {
             const characteristics = product.characteristics || {};
-            
+            // Обрезка описания до 3-4 строк (по символам, если нет \n)
+            let shortDesc = product.description || '';
+            if (!shortDesc) shortDesc = 'Описание отсутствует';
+            let descLines = shortDesc.split('\n');
+            if (descLines.length > 4) descLines = descLines.slice(0, 4);
+            shortDesc = descLines.join(' ');
+            if (shortDesc.length > 180) shortDesc = shortDesc.slice(0, 180);
+            if (shortDesc.length < (product.description || '').length) shortDesc += '...';
+            // Исполнение (множественный выбор)
+            let exec = Array.isArray(characteristics.исполнение) ? characteristics.исполнение.join(', ') : (characteristics.исполнение || 'Не указано');
+            // Галерея изображений
+            // Render main image + thumbnails. Main image uses first photo or image.
+            let images = '';
+            const mainImg = (Array.isArray(product.photos) && product.photos.length) ? product.photos[0] : (product.image || '');
+            if (mainImg) {
+                images += `<img class="main-image" src="${mainImg}" alt="${product.title}" onerror="this.style.display='none'; this.parentElement.querySelector('.product-card__no-image').style.display='flex';" />`;
+            }
+            let sku = Array.isArray(product.sku) ? product.sku.join(', ') : (product.sku || 'Не указан');
             return `
             <div class="product-card" data-id="${product.id}">
                 <div class="product-card__image">
-                    ${product.image ? 
-                        `<img src="${product.image}" alt="${product.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
-                        ''
-                    }
-                    <div class="product-card__no-image" style="${product.image ? 'display: none;' : ''}">
+                    ${images}
+                    <div class="product-card__no-image" style="${images ? 'display: none;' : ''}">
                         <i class="fas fa-camera"></i>
                         <span>Изображение отсутствует</span>
                     </div>
@@ -429,28 +526,30 @@ class CatalogManager {
                 </div>
                 <div class="product-card__content">
                     <h3 class="product-card__title">${product.title || 'Без названия'}</h3>
-                    <p class="product-card__sku">Артикул: ${product.sku || 'Не указан'}</p>
-                    <p class="product-card__description">${product.description || 'Описание отсутствует'}</p>
-                    
+                    <p class="product-card__sku">Артикул: ${sku}</p>
+                    <p class="product-card__description">${shortDesc}</p>
                     <div class="product-card__characteristics">
                         <div class="characteristic">
                             <span class="characteristic__label">Диапазон:</span>
                             <span class="characteristic__value">${characteristics.диапазон || 'Не указан'}</span>
                         </div>
                         <div class="characteristic">
-                            <span class="characteristic__label">Погрешность:</span>
-                            <span class="characteristic__value">${characteristics.погрешность || 'Не указана'}</span>
+                            <span class="characteristic__label">Точность:</span>
+                            <span class="characteristic__value">${characteristics.точность || 'Не указана'}</span>
                         </div>
                         <div class="characteristic">
                             <span class="characteristic__label">Визирование:</span>
                             <span class="characteristic__value">${characteristics.визирование || 'Не указано'}</span>
                         </div>
                         <div class="characteristic">
+                            <span class="characteristic__label">Принцип действия:</span>
+                            <span class="characteristic__value">${characteristics.принципДействия || 'Не указан'}</span>
+                        </div>
+                        <div class="characteristic">
                             <span class="characteristic__label">Исполнение:</span>
-                            <span class="characteristic__value">${characteristics.исполнение || 'Не указано'}</span>
+                            <span class="characteristic__value">${exec}</span>
                         </div>
                     </div>
-                    
                     <div class="product-card__footer">
                         <div class="product-card__price">
                             ${this.formatPrice(product.price)} ₽
@@ -562,37 +661,150 @@ class CatalogManager {
         const popupBody = document.getElementById('productPopupBody');
         
         popupBody.innerHTML = this.createPopupContent(product);
+        // Diagnostics and defensive fixes: ensure description was injected and visible
+        try {
+            console.log('openProductPopup: product.description raw=', product.description);
+            const descNode = popupBody.querySelector('.popup__description');
+            console.log('openProductPopup: popup description node exists=', !!descNode);
+            if (descNode) {
+                console.log('openProductPopup: popup description text=', descNode.innerText && descNode.innerText.trim().slice(0,200));
+                // Defensive: ensure both spans exist; if markup from elsewhere omitted them, recreate safely
+                let shortSpan = descNode.querySelector('.short-desc');
+                let fullSpan = descNode.querySelector('.full-desc');
+                if (!shortSpan) {
+                    shortSpan = document.createElement('span');
+                    shortSpan.className = 'short-desc';
+                    shortSpan.style.display = 'inline';
+                    shortSpan.textContent = (product.description || 'Описание отсутствует').split('\n').slice(0,4).join(' ').slice(0,300);
+                    descNode.insertBefore(shortSpan, descNode.firstChild);
+                }
+                if (!fullSpan) {
+                    fullSpan = document.createElement('span');
+                    fullSpan.className = 'full-desc';
+                    fullSpan.style.display = 'none';
+                    fullSpan.textContent = product.description || 'Описание отсутствует';
+                    // insert after shortSpan
+                    if (shortSpan.nextSibling) descNode.insertBefore(fullSpan, shortSpan.nextSibling);
+                    else descNode.appendChild(fullSpan);
+                }
+
+                // Compute actual computed display values
+                const shortStyle = window.getComputedStyle(shortSpan);
+                const fullStyle = window.getComputedStyle(fullSpan);
+
+                // If short is hidden but contains text, force it visible
+                if ((shortStyle.display === 'none' || shortStyle.visibility === 'hidden') && shortSpan.textContent.trim() !== '') {
+                    shortSpan.style.display = 'inline';
+                    shortSpan.style.visibility = 'visible';
+                    console.log('openProductPopup: forced short-desc visible');
+                }
+
+                // If both hidden or short empty but full has text, show full
+                if ((shortSpan.textContent.trim() === '' || (shortStyle.display === 'none' && fullStyle.display === 'none')) && fullSpan && fullSpan.textContent.trim() !== '') {
+                    fullSpan.style.display = 'block';
+                    if (shortSpan) shortSpan.style.display = 'none';
+                    descNode.classList.add('expanded');
+                    console.log('openProductPopup: showed full-desc because short-desc empty or hidden');
+                }
+
+                // Reset potential harmful inline styles on the container
+                descNode.style.color = descNode.style.color || '';
+                descNode.style.display = descNode.style.display || '';
+            }
+        } catch (err) { console.error('openProductPopup diagnostic error', err); }
+        // For debugging: force-show full description by default so it's visible
+        try {
+            const descNodeForce = popupBody.querySelector('.popup__description');
+            if (descNodeForce) {
+                const shortSpanF = descNodeForce.querySelector('.short-desc');
+                const fullSpanF = descNodeForce.querySelector('.full-desc');
+                const btnF = descNodeForce.querySelector('button.btn--link');
+                if (fullSpanF) fullSpanF.style.display = 'block';
+                if (shortSpanF) shortSpanF.style.display = 'none';
+                if (btnF) { btnF.textContent = 'Свернуть описание'; btnF.setAttribute('aria-expanded', 'true'); }
+                descNodeForce.classList.add('expanded');
+            }
+        } catch (err) { console.error('force-show description error', err); }
+
         document.getElementById('productPopup').classList.add('active');
         document.body.style.overflow = 'hidden';
+
+        // Setup image behavior: swap thumbnails, upscale small images if needed
+        if (this.setupPopupImages) {
+            this.setupPopupImages(product);
+        }
     }
 
     createPopupContent(product) {
+        // debug: log description length to help diagnose missing description cases
+        try { console.log('createPopupContent:', product.id, 'description-length=', (product.description||'').length); } catch(e) {}
+        // helper to escape HTML inside descriptions to avoid breaking popup markup
+        const escapeHtml = (str) => {
+            if (!str && str !== 0) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        };
         const characteristics = product.characteristics || {};
-        
+        // Обрезка описания до 3-4 строк
+        let shortDesc = product.description || '';
+        if (!shortDesc) shortDesc = 'Описание отсутствует';
+        let descLines = shortDesc.split('\n');
+        if (descLines.length > 4) descLines = descLines.slice(0, 4);
+        shortDesc = descLines.join(' ');
+        if (shortDesc.length > 300) shortDesc = shortDesc.slice(0, 300);
+        if (shortDesc.length < (product.description || '').length) shortDesc += '...';
+        let exec = Array.isArray(characteristics.исполнение) ? characteristics.исполнение.join(', ') : (characteristics.исполнение || 'Не указано');
+        let materials = Array.isArray(characteristics['Измеряемые материалы и среды']) ? characteristics['Измеряемые материалы и среды'].join(', ') : (characteristics['Измеряемые материалы и среды'] || 'Не указаны');
+        let features = Array.isArray(characteristics['Особенности применения']) ? characteristics['Особенности применения'].join(', ') : (characteristics['Особенности применения'] || 'Не указаны');
+        // Gallery: main image + thumbnails
+        let mainImageHtml = '';
+        let thumbsHtml = '';
+        if (Array.isArray(product.photos) && product.photos.length) {
+            const first = product.photos[0];
+            mainImageHtml = `<img id="popup-main-img" src="${first}" alt="${product.title}">`;
+            thumbsHtml = product.photos.map((url, idx) => `
+                <div class="popup__thumbnail" data-src="${url}" data-index="${idx}">
+                    <img src="${url}" alt="${product.title}">
+                </div>
+            `).join('');
+        } else if (product.image) {
+            mainImageHtml = `<img id="popup-main-img" src="${product.image}" alt="${product.title}">`;
+            thumbsHtml = '';
+        }
+        let sku = Array.isArray(product.sku) ? product.sku.join(', ') : (product.sku || 'Не указан');
+        // include both short and full description (full hidden) so toggle works reliably
+        const fullDescRaw = product.description && product.description.trim() ? product.description : 'Описание отсутствует';
+        const fullDesc = escapeHtml(fullDescRaw);
+        const shortDescRaw = shortDesc || '';
+        const shortDescEsc = escapeHtml(shortDescRaw);
         return `
             <div class="popup__content">
                 <div class="popup__gallery">
                     <div class="popup__main-image">
-                        ${product.image ? 
-                            `<img src="${product.image}" alt="${product.title}" id="popupMainImage" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : 
-                            ''
-                        }
-                        <div class="product-popup__no-image" style="${product.image ? 'display: none;' : ''}">
+                        ${mainImageHtml}
+                        <div class="product-popup__no-image" style="${mainImageHtml ? 'display: none;' : ''}">
                             <i class="fas fa-camera"></i>
                             <span>Изображение отсутствует</span>
                         </div>
                     </div>
+                    <div class="popup__thumbnails-wrapper">
+                        <div class="popup__thumbnails">
+                            ${thumbsHtml}
+                        </div>
+                    </div>
                 </div>
-                <div class="popup__info" style="padding-right: 50px;">
+                <div class="popup__info">
                     <span class="popup__badge">${product.category || 'Категория не указана'}</span>
                     <h1>${product.title || 'Без названия'}</h1>
                     <div class="popup__price">${this.formatPrice(product.price)} ₽</div>
-                    <p class="popup__description">${product.description || 'Описание отсутствует'}</p>
-                    
+                    <p class="popup__description">
+                        <span class="short-desc" style="display:inline">${shortDescEsc}</span>
+                        <span class="full-desc" style="display:none">${fullDesc}</span>
+                        <button class="btn btn--link" onclick="catalog.showFullDescription('${product.id}')" aria-expanded="false">Развернуть описание</button>
+                    </p>
                     <div class="popup__specs">
                         <div class="popup__spec">
                             <strong>Артикул:</strong>
-                            <span>${product.sku || 'Не указан'}</span>
+                            <span>${sku}</span>
                         </div>
                         <div class="popup__spec">
                             <strong>Диапазон измерений:</strong>
@@ -600,7 +812,7 @@ class CatalogManager {
                         </div>
                         <div class="popup__spec">
                             <strong>Погрешность:</strong>
-                            <span>${characteristics.погрешность || 'Не указана'}</span>
+                            <span>${characteristics.погрешность ? characteristics.погрешность + '%' : 'Не указана'}</span>
                         </div>
                         <div class="popup__spec">
                             <strong>Показатель визирования:</strong>
@@ -615,20 +827,20 @@ class CatalogManager {
                             <span>${characteristics.принципДействия || 'Не указан'}</span>
                         </div>
                         <div class="popup__spec">
-                            <strong>Измеряемые материалы:</strong>
-                            <span>${characteristics.материалы || 'Не указаны'}</span>
+                            <strong>Измеряемые материалы и среды:</strong>
+                            <span>${materials}</span>
+                        </div>
+                        <div class="popup__spec">
+                            <strong>Особенности применения:</strong>
+                            <span>${features}</span>
                         </div>
                         <div class="popup__spec">
                             <strong>Исполнение:</strong>
-                            <span>${characteristics.исполнение || 'Не указано'}</span>
+                            <span>${exec}</span>
                         </div>
                         <div class="popup__spec">
                             <strong>Быстродействие:</strong>
                             <span>${characteristics.быстродействие || 'Не указано'}</span>
-                        </div>
-                        <div class="popup__spec">
-                            <strong>Точность:</strong>
-                            <span>${characteristics.точность || 'Не указана'}</span>
                         </div>
                         <div class="popup__spec">
                             <strong>Устройство визирования:</strong>
@@ -645,7 +857,6 @@ class CatalogManager {
                         </div>
                         ` : ''}
                     </div>
-
                     <div class="popup__actions">
                         <button class="btn btn--primary" onclick="openChatWithProduct('${product.title}', '${product.sku}')">
                             <i class="fas fa-shopping-cart"></i>
@@ -654,6 +865,10 @@ class CatalogManager {
                         <button class="btn btn--outline" onclick="catalog.closeProductPopup()">
                             <i class="fas fa-times"></i>
                             Закрыть
+                        </button>
+                        <button class="btn btn--outline" onclick="catalog.printProduct('${product.id}')">
+                            <i class="fas fa-print"></i>
+                            Печать
                         </button>
                     </div>
                 </div>
@@ -680,6 +895,87 @@ class CatalogManager {
         return new Intl.NumberFormat('ru-RU').format(price);
     }
 
+    showFullDescription(productId) {
+        const popup = document.getElementById('productPopup');
+        if (!popup) return;
+        const desc = popup.querySelector('.popup__description');
+        if (!desc) return;
+        const shortSpan = desc.querySelector('.short-desc');
+        const fullSpan = desc.querySelector('.full-desc');
+        const btn = desc.querySelector('button.btn--link');
+        const isExpanded = desc.classList.contains('expanded') || (fullSpan && window.getComputedStyle(fullSpan).display !== 'none');
+        try {
+            if (isExpanded) {
+                // collapse
+                if (fullSpan) fullSpan.style.display = 'none';
+                if (shortSpan) shortSpan.style.display = 'block';
+                if (btn) btn.textContent = 'Развернуть описание';
+                desc.classList.remove('expanded');
+            } else {
+                // expand
+                if (fullSpan) fullSpan.style.display = 'block';
+                if (shortSpan) shortSpan.style.display = 'none';
+                if (btn) btn.textContent = 'Свернуть описание';
+                desc.classList.add('expanded');
+                // Scroll popup content slightly to keep the button visible on expand
+                const body = document.querySelector('.product-popup__body');
+                if (body) body.scrollTop = body.scrollTop + 20;
+            }
+        } catch (err) {
+            console.error('showFullDescription error', err);
+        }
+    }
+
+    printProduct(productId) {
+        const product = this.getProductById(productId);
+        if (!product) return;
+
+        const img = (Array.isArray(product.photos) && product.photos.length) ? product.photos[0] : (product.image || '');
+        const sku = Array.isArray(product.sku) ? product.sku.join(', ') : (product.sku || '');
+
+        const specs = product.characteristics || {};
+
+        const html = `
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Печать: ${product.title}</title>
+                <style>
+                    body{font-family: Arial, sans-serif; padding:20px; color:#222}
+                    .wrap{max-width:800px;margin:0 auto}
+                    img{max-width:100%;height:auto;margin-bottom:20px}
+                    h1{font-size:24px;margin-bottom:8px}
+                    .price{font-size:20px;color:#d6891f;margin-bottom:16px}
+                    .spec{margin-bottom:6px}
+                    .label{font-weight:600;margin-right:8px}
+                </style>
+            </head>
+            <body>
+                <div class="wrap">
+                    ${img ? `<img src="${img}" alt="${product.title}">` : ''}
+                    <h1>${product.title || ''}</h1>
+                    <div class="price">${this.formatPrice(product.price)} ₽</div>
+                    <div class="spec"><span class="label">Артикул:</span>${sku}</div>
+                    <div class="spec"><span class="label">Категория:</span>${product.category || ''}</div>
+                    <div class="spec"><span class="label">Описание:</span><div>${product.description || ''}</div></div>
+                    <h3>Характеристики</h3>
+                    ${Object.keys(specs).map(k => `<div class="spec"><span class="label">${k}:</span>${Array.isArray(specs[k]) ? specs[k].join(', ') : specs[k] || ''}</div>`).join('')}
+                </div>
+                <script>window.onload = function(){ setTimeout(()=>{ window.print(); }, 50); };</script>
+            </body>
+            </html>
+        `;
+
+        const w = window.open('', '_blank');
+        if (!w) {
+            alert('Откройте всплывающие окна для сайта, чтобы печать работала.');
+            return;
+        }
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+    }
+
     hideLoading() {
         const loadingElement = document.getElementById('catalogLoading');
         if (loadingElement) {
@@ -693,6 +989,72 @@ class CatalogManager {
 
     getProductsByCategory(category) {
         return this.products.filter(product => product.category.includes(category));
+    }
+
+    // After popup markup inserted: wire thumbnails and upscale small images if necessary
+    setupPopupImages(product) {
+        const mainImg = document.getElementById('popup-main-img');
+        const popupMainContainer = document.querySelector('.popup__main-image');
+        const thumbnails = Array.from(document.querySelectorAll('.popup__thumbnail'));
+
+        if (!mainImg || !popupMainContainer) return;
+
+        // Ensure main image fills container but preserves aspect ratio
+        mainImg.style.width = '100%';
+        mainImg.style.height = '100%';
+        mainImg.style.objectFit = 'contain';
+        mainImg.style.display = 'block';
+        mainImg.style.transformOrigin = 'center center';
+        mainImg.style.transition = 'transform 0.2s ease';
+
+        // On load, check if natural size is smaller than container and upscale
+        const tryUpscale = () => {
+            const naturalW = mainImg.naturalWidth || 0;
+            const naturalH = mainImg.naturalHeight || 0;
+            const rect = popupMainContainer.getBoundingClientRect();
+            const contW = rect.width || 1;
+            const contH = rect.height || 1;
+
+            // If image is smaller than container, scale it up proportionally
+            const scaleW = contW / Math.max(naturalW, 1);
+            const scaleH = contH / Math.max(naturalH, 1);
+            const scale = Math.max(1, Math.min(scaleW, scaleH));
+
+            if (scale > 1.01) {
+                // Apply CSS transform scale to visually enlarge small images
+                mainImg.style.transform = `scale(${scale.toFixed(3)})`;
+            } else {
+                mainImg.style.transform = '';
+            }
+        };
+
+        if (mainImg.complete) {
+            tryUpscale();
+        } else {
+            mainImg.addEventListener('load', tryUpscale);
+            // In case of error, hide upscale
+            mainImg.addEventListener('error', () => { mainImg.style.transform = ''; });
+        }
+
+        // Wire thumbnails to swap main image when clicked
+        thumbnails.forEach(thumb => {
+            thumb.addEventListener('click', (e) => {
+                const src = thumb.getAttribute('data-src');
+                if (!src) return;
+                // reset transform before changing src
+                mainImg.style.transform = '';
+                mainImg.src = src;
+                // active state
+                document.querySelectorAll('.popup__thumbnail.active').forEach(n => n.classList.remove('active'));
+                thumb.classList.add('active');
+            });
+        });
+
+        // Mark first thumbnail active if present
+        if (thumbnails.length) {
+            thumbnails.forEach(t => t.classList.remove('active'));
+            thumbnails[0].classList.add('active');
+        }
     }
 }
 
@@ -749,6 +1111,21 @@ let catalog;
 
 document.addEventListener('DOMContentLoaded', function() {
     catalog = new CatalogManager();
+    // Инициализация обработчиков и слайдера
+    if (catalog.setupEventListeners) catalog.setupEventListeners();
+    if (catalog.initTemperatureSlider) catalog.initTemperatureSlider();
+    // Sync initial sort with UI (so displayed sort matches internal state)
+    try {
+        const sortEl = document.getElementById('sortSelect');
+        if (sortEl && sortEl.value) {
+            catalog.sortBy = sortEl.value;
+        } else {
+            // ensure UI shows current catalog.sortBy
+            if (sortEl) sortEl.value = catalog.sortBy;
+        }
+    } catch (e) {}
+    // Загружаем товары
+    catalog.loadProducts();
     
     // Chat widget functionality
     const chatButton = document.querySelector('.chat-widget__button');
@@ -867,6 +1244,92 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Listen for product updates from other tabs (admin actions)
+window.addEventListener('storage', (e) => {
+    if (!catalog) return;
+    if (e.key === 'products-updated') {
+        try {
+            console.log('Catalog: detected products-updated event');
+            let updatedId = null;
+            if (e.newValue) {
+                try {
+                    const parsed = JSON.parse(e.newValue);
+                    if (parsed && parsed.id) updatedId = parsed.id;
+                } catch (err) {
+                    // not JSON, could be timestamp string
+                }
+            }
+
+            // If we have an id, try to fetch only that product and update DOM in-place
+            if (updatedId) {
+                console.log('Catalog: attempting single-product update for id=', updatedId);
+                // debounce repeated events
+                if (catalog.__singleReloadTimeout) clearTimeout(catalog.__singleReloadTimeout);
+                catalog.__singleReloadTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`/api/products/${updatedId}?_=${Date.now()}`);
+                        if (!res.ok) throw new Error('Failed to fetch updated product');
+                        const raw = await res.json();
+                        // some APIs may return the product directly or as an array
+                        const rawProduct = Array.isArray(raw) ? raw[0] : raw;
+                        if (!rawProduct) throw new Error('No product returned');
+
+                        const norm = catalog.normalizeProduct(rawProduct);
+                        // replace in catalog.products if exists, otherwise add
+                        const idx = catalog.products.findIndex(p => String(p.id) === String(norm.id));
+                        if (idx >= 0) {
+                            catalog.products[idx] = norm;
+                        } else {
+                            catalog.products.push(norm);
+                        }
+
+                        // Re-apply filters and rerender
+                        catalog.applyFilters();
+
+                        // Try to find and highlight the updated card; if not present, fall back to full reload
+                        setTimeout(() => {
+                            const el = document.querySelector(`.product-card[data-id="${norm.id}"]`);
+                            if (el) {
+                                try {
+                                    el.classList.add('highlight-updated');
+                                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    setTimeout(() => el.classList.remove('highlight-updated'), 3500);
+                                } catch (err) { console.error('Error highlighting updated product', err); }
+                            } else {
+                                console.warn('Updated product not in current filtered view, falling back to full reload');
+                                // fallback: reset filters and reload full list
+                                try { catalog.resetFilters(); } catch (e) { console.error(e); }
+                                if (catalog.__reloadTimeout) clearTimeout(catalog.__reloadTimeout);
+                                catalog.__reloadTimeout = setTimeout(() => catalog.loadProducts(true).then(()=>catalog.applyFilters()).catch(()=>{}), 150);
+                            }
+                        }, 250);
+                    } catch (err) {
+                        console.error('Single product update failed, falling back to full reload:', err);
+                        try { catalog.resetFilters(); } catch (e) { console.error(e); }
+                        if (catalog.__reloadTimeout) clearTimeout(catalog.__reloadTimeout);
+                        catalog.__reloadTimeout = setTimeout(() => catalog.loadProducts(true).then(()=>catalog.applyFilters()).catch(()=>{}), 150);
+                    }
+                }, 120);
+                return;
+            }
+
+            // No id provided: fallback to clearing filters + full reload
+            console.log('Catalog: no id provided in update payload — resetting filters and reloading');
+            try { catalog.resetFilters(); } catch (err) { console.error('Error resetting filters before products reload:', err); }
+            if (catalog.__reloadTimeout) clearTimeout(catalog.__reloadTimeout);
+            catalog.__reloadTimeout = setTimeout(() => {
+                catalog.loadProducts(true).then(() => {
+                    console.log('Catalog: products reloaded after update');
+                    try { catalog.applyFilters(); } catch (err) { console.error(err); }
+                }).catch(err => console.error('Error reloading products after update:', err));
+            }, 150);
+        } catch (err) {
+            console.error('Error handling products-updated event', err);
+        }
+    }
+});
+
+// Экспорт для глобального использования
 window.CatalogManager = CatalogManager;
 window.openChatWithProduct = openChatWithProduct;
 window.openChat = openChat;

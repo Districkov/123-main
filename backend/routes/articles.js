@@ -1,24 +1,28 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
 const router = express.Router();
-const articlesFile = path.join(__dirname, '..', 'data', 'articles.json');
+const db = require('../db');
 
 router.get('/', (req, res) => {
   try {
-    const items = JSON.parse(fs.readFileSync(articlesFile, 'utf8') || '[]');
+    const q = req.query.q || req.query.search || '';
+    const items = db.getArticles(q);
     res.json(items);
-  } catch(e) { res.json([]); }
+  } catch (e) {
+    console.error('articles GET error:', e);
+    res.json([]);
+  }
 });
 
 router.get('/:id', (req, res) => {
   try {
-    const items = JSON.parse(fs.readFileSync(articlesFile, 'utf8') || '[]');
     const id = String(req.params.id);
-    const item = items.find(i => String(i.id) === id);
+    const item = db.getArticleById(id);
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.json(item);
-  } catch(e) { res.status(500).json({ error: 'Read error' }); }
+  } catch (e) {
+    console.error('articles/:id error:', e);
+    res.status(500).json({ error: 'Read error' });
+  }
 });
 
 module.exports = router;

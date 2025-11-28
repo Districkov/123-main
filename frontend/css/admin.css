@@ -289,6 +289,43 @@ body.unauthorized #auth-message {
   flex-wrap: wrap;
 }
 
+/* Products search and scroll-top */
+.search-wrapper input[type="search"] {
+  padding: 8px 12px;
+  border: 1px solid #dfe4ee;
+  border-radius: 8px;
+  width: 360px;
+  max-width: 40vw;
+}
+
+#scroll-top-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  z-index: 20000;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  border-radius: 8px;
+  background: #ff8a00; /* orange */
+  color: white;
+}
+
+@media (max-width: 640px) {
+  #scroll-top-btn { right: 12px; bottom: 16px; width: 40px; height: 40px; }
+}
+
+#scroll-top-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(255,138,0,0.18);
+}
+
+.actions-row { display:flex; gap:12px; align-items:center; }
+
 /* Buttons */
 button {
   padding: 10px 20px;
@@ -464,6 +501,108 @@ button {
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+/* Additional styles for admin filter controls (selects, multi-selects) */
+.form-group select,
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dfe4ee;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  color: #222;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.form-group select:focus,
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 6px 18px rgba(102,126,234,0.08);
+}
+
+/* Add custom arrow for single selects */
+.form-group select:not([multiple]) {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'><path fill='%23667eea' d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 12px;
+  padding-right: 38px; /* space for arrow */
+}
+
+/* Style for multi-select boxes used for characteristics */
+select[multiple],
+.form-group select[multiple] {
+  min-height: 140px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 8px 10px;
+  /* For multi-selects keep native list, but remove inner borders */
+  background: transparent;
+  border: none;
+}
+
+/* Make long lists inside multi-select clearer */
+select[multiple] option {
+  padding: 6px 8px;
+}
+
+/* Ensure multi-select wrapper looks like other controls and contains the select */
+.multi-select-wrapper {
+  border: 1px solid #dfe4ee;
+  padding: 6px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.multi-select-wrapper select {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  font-size: 14px;
+}
+
+/* Two-column layout for filters area in admin */
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px 24px;
+  align-items: start;
+}
+
+/* Responsive fallback */
+@media (max-width: 900px) {
+  .filters-grid { grid-template-columns: 1fr; }
+}
+
+/* Label improvements */
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #000000;
+}
+
+/* Small helper for select placeholders */
+.select-empty {
+  color: #9aa3b2;
+}
+
+/* Small spacing for multi-select containers */
+.multi-select-wrapper {
+  border: 1px solid #eef1f6;
+  padding: 6px;
+  border-radius: 6px;
+  background: #fff;
 }
 
 /* Admin Popup Styles */
@@ -643,6 +782,32 @@ button {
   object-fit: cover;
 }
 
+/* Additional admin styles: improve form controls and image previews */
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea, .token-input {
+  border-radius: 6px;
+  padding: 10px 12px;
+  border: 1px solid #dfe4ee;
+}
+
+.item-image.preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #eef1f6;
+}
+
+.admin .actions-row {
+  display:flex;gap:8px;align-items:center;
+}
+
+/* Responsive spacing for admin forms */
+@media (min-width: 992px) {
+  .ajax-form { max-width: 800px; }
+}
+
 .item-sku, .item-meta {
   display: block;
   font-size: 0.85rem;
@@ -726,3 +891,144 @@ button {
     font-size: 1.1rem;
   }
 }
+
+/* Photos preview inside admin product popup */
+.photos-preview {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.photos-preview__item {
+  width: 120px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #eef1f6;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.photos-preview__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transition: transform 0.15s ease;
+}
+.photos-preview__item a { display:block; width:100%; height:100%; }
+.photos-preview__empty {
+  color: #6c757d;
+  font-size: 13px;
+}
+
+/* Upload input + hint styles */
+
+.photos-upload input[type="file"] {
+  /* keep input accessible but hide default control */
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.btn-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #667eea;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  font-size: 0.95rem;
+  margin-top: 6px;
+}
+
+.btn-upload:hover {
+  background: #5a6fd8;
+}
+
+.upload-filenames {
+  display: inline-block;
+  margin-left: 12px;
+  font-size: 0.95rem;
+  color: #495057;
+}
+
+.photos-upload-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+/* Small visual indicator while uploading (applied by JS via class) */
+.photos-uploading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  .photos-preview__item { width: 90px; height: 70px; }
+}
+
+/* Compact custom multi-select styles */
+.custom-multiselect {
+  display: inline-block;
+  position: relative;
+  width: 100%;
+  margin-top: 4px;
+}
+.custom-multiselect .multi-toggle {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #dfe4ee;
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #222;
+}
+.custom-multiselect .multi-toggle.select-empty { color: #9aa3b2; }
+.custom-multiselect .multi-toggle:after {
+  content: '\25BE';
+  float: right;
+  color: #667eea;
+  font-size: 12px;
+}
+.custom-multiselect .multi-panel {
+  display: none;
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: #fff;
+  border: 1px solid #e9eef8;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(102,126,234,0.12);
+  max-height: 220px;
+  overflow: auto;
+  padding: 8px;
+}
+.custom-multiselect .multi-panel.open { display: block; }
+.custom-multiselect .multi-option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.custom-multiselect .multi-option:hover { background: #f5f8ff; }
+.custom-multiselect .multi-option input[type="checkbox"] { margin: 0; }
+.custom-multiselect .multi-option span { font-size: 14px; color: #333; }
+
+/* Make sure native multiple selects inside multi-select-wrapper remain hidden but accessible */
+.multi-select-wrapper select[multiple] { display: none !important; }
