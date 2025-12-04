@@ -1587,6 +1587,22 @@ body {
     flex-grow: 1;
 }
 
+.product-card__description-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0 0 15px;
+    color: var(--primary-color);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    text-decoration: underline;
+}
+
+.product-card__description-toggle:hover {
+    color: var(--secondary-color);
+}
+
 .product-card__characteristics {
     margin-bottom: 20px;
 }

@@ -1174,10 +1174,10 @@ if (tokenInput) {
   });
 }
 
-// Lightweight: populate visibility and temperature-range selects from products.json
+// Lightweight: populate visibility and temperature-range selects from DB-backed /api/products
 async function populateCharacteristicSelects() {
   try {
-    const resp = await fetch('/data/products.json');
+    const resp = await fetch('/api/products');
     if (!resp.ok) return;
     const products = await resp.json();
 

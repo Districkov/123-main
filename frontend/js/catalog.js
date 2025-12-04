@@ -300,6 +300,40 @@ class CatalogManager {
                 this.nextPage();
             }
         });
+
+        // Раскрытие/сворачивание описания товара в карточке
+        const catalogGrid = document.getElementById('catalogGrid');
+        if (catalogGrid) {
+            catalogGrid.addEventListener('click', (e) => {
+                const toggleBtn = e.target.closest('.product-card__description-toggle');
+                if (!toggleBtn) return;
+
+                const card = toggleBtn.closest('.product-card');
+                if (!card) return;
+
+                const descEl = card.querySelector('.product-card__description');
+                if (!descEl) return;
+
+                const productId = descEl.getAttribute('data-id');
+                const product = this.getProductById(productId);
+                if (!product) return;
+
+                const isExpanded = descEl.getAttribute('data-expanded') === 'true';
+
+                if (!isExpanded) {
+                    // Сохраняем короткий текст в data-атрибут
+                    descEl.setAttribute('data-short', descEl.textContent);
+                    descEl.textContent = product.description || 'Описание отсутствует';
+                    descEl.setAttribute('data-expanded', 'true');
+                    toggleBtn.textContent = 'Свернуть описание';
+                } else {
+                    const shortText = descEl.getAttribute('data-short') || '';
+                    descEl.textContent = shortText;
+                    descEl.setAttribute('data-expanded', 'false');
+                    toggleBtn.textContent = 'Показать полностью';
+                }
+            }
+        });
     }
 
     applyFilters() {
@@ -527,15 +561,19 @@ class CatalogManager {
                 <div class="product-card__content">
                     <h3 class="product-card__title">${product.title || 'Без названия'}</h3>
                     <p class="product-card__sku">Артикул: ${sku}</p>
-                    <p class="product-card__description">${shortDesc}</p>
+                    <p class="product-card__description" data-id="${product.id}" data-expanded="false">${shortDesc}</p>
+                    ${shortDesc.length < (product.description || '').length ? `
+                    <button type="button" class="product-card__description-toggle" data-id="${product.id}">
+                        Показать полностью
+                    </button>` : ''}
                     <div class="product-card__characteristics">
                         <div class="characteristic">
                             <span class="characteristic__label">Диапазон:</span>
                             <span class="characteristic__value">${characteristics.диапазон || 'Не указан'}</span>
                         </div>
                         <div class="characteristic">
-                            <span class="characteristic__label">Точность:</span>
-                            <span class="characteristic__value">${characteristics.точность || 'Не указана'}</span>
+                            <span class="characteristic__label">Погрешность:</span>
+                            <span class="characteristic__value">${characteristics.погрешность || 'Не указана'}</span>
                         </div>
                         <div class="characteristic">
                             <span class="characteristic__label">Визирование:</span>
