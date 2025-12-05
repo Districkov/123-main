@@ -130,6 +130,8 @@ class CatalogManager {
         const rangeTrack = document.getElementById('rangeTrack');
 
         if (!tempMin || !tempMax) return;
+        const presetCheckboxes = Array.from(document.querySelectorAll('.temp-range-checkbox'));
+        const self = this;
 
         const initialMax = 3000;
         const extendedMax = 3800;
@@ -165,6 +167,16 @@ class CatalogManager {
                 tempMin.value = max - 50;
                 updateSlider();
             }
+            // Update preset checkboxes: check only when slider matches a preset exactly
+            presetCheckboxes.forEach(cb => {
+                const pMin = parseInt(cb.getAttribute('data-min'));
+                const pMax = parseInt(cb.getAttribute('data-max'));
+                if (pMin === parseInt(tempMin.value) && pMax === parseInt(tempMax.value)) {
+                    cb.checked = true;
+                } else {
+                    cb.checked = false;
+                }
+            });
         };
 
         tempMin.addEventListener('input', () => {
@@ -181,6 +193,43 @@ class CatalogManager {
             }
             updateSlider();
             this.applyTemperatureFilter();
+        });
+
+        // Preset checkbox handling
+        presetCheckboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                const pMin = parseInt(this.getAttribute('data-min'));
+                const pMax = parseInt(this.getAttribute('data-max'));
+                // When a preset is checked, add its range to currentFilters.temperature
+                if (this.checked) {
+                    // If shift/ctrl is NOT held, clear other presets (allow multi-select if user holds ctrl)
+                    if (!window.event || !window.event.ctrlKey) {
+                        presetCheckboxes.forEach(other => { if (other !== this) other.checked = false; });
+                        self.currentFilters.temperature = [];
+                    }
+                    const rangeStr = `${pMin}-${pMax}`;
+                    if (!self.currentFilters.temperature.includes(rangeStr)) {
+                        self.currentFilters.temperature.push(rangeStr);
+                    }
+                    // set slider to this preset
+                    tempMin.value = pMin;
+                    tempMax.value = pMax;
+                    updateSlider();
+                    self.applyFilters();
+                } else {
+                    // remove range
+                    const rangeStr = `${pMin}-${pMax}`;
+                    self.currentFilters.temperature = self.currentFilters.temperature.filter(r => r !== rangeStr);
+                    // if no presets remain checked, set slider to full range
+                    const anyChecked = presetCheckboxes.some(x => x.checked);
+                    if (!anyChecked) {
+                        tempMin.value = 0;
+                        tempMax.value = parseInt(tempMax.max) || 3000;
+                        updateSlider();
+                    }
+                    self.applyFilters();
+                }
+            });
         });
 
         tempMinInput.addEventListener('input', function() {

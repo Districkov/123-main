@@ -1059,6 +1059,44 @@ body {
     box-shadow: 0 0 0 2px rgba(231, 152, 35, 0.1);
 }
 
+/* Temperature presets and slider */
+.temperature-presets {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.preset-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    color: var(--text-color);
+}
+.preset-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+.range-slider {
+    position: relative;
+    height: 36px;
+    margin-bottom: 8px;
+}
+.range-values {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: var(--text-light);
+    margin-bottom: 8px;
+}
+.range-inputs {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+.range-input label { font-size: 13px; color: var(--text-light); margin-right:6px; }
+.range-input input[type="number"] { width: 110px; padding:6px 8px; border:1px solid var(--border-color); border-radius:6px; }
+
 /* Filter Groups */
 .filters__groups {
     display: flex;

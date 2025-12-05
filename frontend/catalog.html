@@ -67,10 +67,17 @@
                         <div class="filter-group">
                             <h3>Диапазон температур (°C)</h3>
                             <div class="temperature-range">
+                                <div class="temperature-presets">
+                                    <label class="preset-checkbox"><input type="checkbox" class="temp-range-checkbox" data-min="0" data-max="3000"><span>до 3000</span></label>
+                                    <label class="preset-checkbox"><input type="checkbox" class="temp-range-checkbox" data-min="0" data-max="1800"><span>до 1800</span></label>
+                                    <label class="preset-checkbox"><input type="checkbox" class="temp-range-checkbox" data-min="250" data-max="2000"><span>250 - 2000</span></label>
+                                    <label class="preset-checkbox"><input type="checkbox" class="temp-range-checkbox" data-min="200" data-max="1200"><span>200 - 1200</span></label>
+                                    <label class="preset-checkbox"><input type="checkbox" class="temp-range-checkbox" data-min="0" data-max="3000"><span>от 0</span></label>
+                                </div>
                                 <div class="range-slider">
                                     <div class="range-track" id="rangeTrack"></div>
-                                    <input type="range" id="tempMin" class="range-min" min="0" max="3000" value="0" step="50">
-                                    <input type="range" id="tempMax" class="range-max" min="0" max="3000" value="3000" step="50">
+                                    <input type="range" id="tempMin" class="range-min" min="0" max="3000" value="0" step="50" title="Минимальная температура">
+                                    <input type="range" id="tempMax" class="range-max" min="0" max="3000" value="3000" step="50" title="Максимальная температура">
                                 </div>
                                 <div class="range-values">
                                     <span id="minValue">0°C</span>
@@ -78,12 +85,12 @@
                                 </div>
                                 <div class="range-inputs">
                                     <div class="range-input">
-                                        <label>От:</label>
-                                        <input type="number" id="tempMinInput" value="0" min="0" max="3000">
+                                        <label for="tempMinInput">От:</label>
+                                        <input type="number" id="tempMinInput" value="0" min="0" max="3000" title="Минимальная температура (введи число)">
                                     </div>
                                     <div class="range-input">
-                                        <label>До:</label>
-                                        <input type="number" id="tempMaxInput" value="3000" min="0" max="3000">
+                                        <label for="tempMaxInput">До:</label>
+                                        <input type="number" id="tempMaxInput" value="3000" min="0" max="3000" title="Максимальная температура (введи число)">
                                     </div>
                                 </div>
                             </div>
