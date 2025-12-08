@@ -1,4 +1,5 @@
 // catalog.js - Версия без закрепленного фильтра и подсказок
+console.log('catalog.js build v5');
 class CatalogManager {
     async loadProducts(force = false) {
         // force — для cache-bust при обновлении
@@ -381,8 +382,8 @@ class CatalogManager {
                     descEl.setAttribute('data-expanded', 'false');
                     toggleBtn.textContent = 'Показать полностью';
                 }
-            }
-        });
+            });
+        }
     }
 
     applyFilters() {
@@ -452,12 +453,36 @@ class CatalogManager {
     }
 
     checkTemperatureFilter(product, selectedRanges) {
+        const bounds = this.getTemperatureBounds(product);
+        if (!Number.isFinite(bounds.min) || !Number.isFinite(bounds.max)) return false;
         return selectedRanges.some(range => {
             const [min, max] = range.split('-').map(Number);
-            const productMin = product.characteristics.температураМин;
-            const productMax = product.characteristics.температураМакс;
-            return productMin <= max && productMax >= min;
+            if (!Number.isFinite(min) || !Number.isFinite(max)) return true;
+            return bounds.min <= max && bounds.max >= min;
         });
+    }
+
+    // Try to extract numeric temperature bounds even if only a string range is present
+    getTemperatureBounds(product) {
+        const ch = product.characteristics || {};
+        let pMin = Number(ch.температураМин);
+        let pMax = Number(ch.температураМакс);
+
+        // Fallback: parse from text range like "200-1200°С" or "0 ... 3000"
+        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
+            const rangeStr = ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['диапазон'] || '';
+            const nums = String(rangeStr).match(/-?\d+/g);
+            if (nums && nums.length >= 2) {
+                pMin = Number(nums[0]);
+                pMax = Number(nums[1]);
+            }
+        }
+
+        // If still invalid, mark as not filterable
+        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
+            return { min: NaN, max: NaN };
+        }
+        return { min: pMin, max: pMax };
     }
 
     sortProducts(products) {

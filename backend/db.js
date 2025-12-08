@@ -41,6 +41,8 @@ function init() {
       updatedAt TEXT
     )
   `).run();
+
+  seedFromJsonIfEmpty();
 }
 
 // Products API
@@ -171,6 +173,52 @@ function normalizeArticleRow(row) {
 function tryParseJSON(v) {
   if (v === null || v === undefined) return null;
   try { return JSON.parse(v); } catch (e) { return v; }
+}
+
+// If tables are empty (fresh install), pull data from bundled JSON files
+function seedFromJsonIfEmpty() {
+  try {
+    const productCount = db.prepare(`SELECT COUNT(*) as c FROM products`).get().c || 0;
+    const articleCount = db.prepare(`SELECT COUNT(*) as c FROM articles`).get().c || 0;
+
+    if (productCount === 0) {
+      const productsPath = path.join(__dirname, 'data', 'products.json');
+      if (fs.existsSync(productsPath)) {
+        const raw = fs.readFileSync(productsPath, 'utf8') || '[]';
+        const products = JSON.parse(raw);
+        let imported = 0;
+        for (const p of products) {
+          try {
+            createProduct(p);
+            imported++;
+          } catch (err) {
+            console.warn('Product seed skipped:', err.message || err);
+          }
+        }
+        console.log(`Seeded ${imported} products from products.json`);
+      }
+    }
+
+    if (articleCount === 0) {
+      const articlesPath = path.join(__dirname, 'data', 'articles.json');
+      if (fs.existsSync(articlesPath)) {
+        const raw = fs.readFileSync(articlesPath, 'utf8') || '[]';
+        const articles = JSON.parse(raw);
+        let imported = 0;
+        for (const a of articles) {
+          try {
+            createArticle(a);
+            imported++;
+          } catch (err) {
+            console.warn('Article seed skipped:', err.message || err);
+          }
+        }
+        console.log(`Seeded ${imported} articles from articles.json`);
+      }
+    }
+  } catch (err) {
+    console.error('Database seed failed:', err);
+  }
 }
 
 module.exports = {
