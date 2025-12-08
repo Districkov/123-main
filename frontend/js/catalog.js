@@ -50,6 +50,18 @@ class CatalogManager {
 
     normalizeProduct(rawProduct) {
         const ch = rawProduct.characteristics || {};
+        const parsePogreshnost = (v) => {
+            const num = parseFloat(String(v).replace(',', '.'));
+            if (!Number.isFinite(num)) return null;
+            // если значение было в долях (0.005), переведем в проценты
+            return num > 0 && num < 0.1 ? +(num * 100).toFixed(3) : num;
+        };
+        const pogNum = parsePogreshnost(ch['Погрешность'] || ch['погрешность']);
+        const formatPogreshnost = (num) => {
+            if (!Number.isFinite(num)) return '';
+            return `${num}%`;
+        };
+        const accuracyLabel = Number.isFinite(pogNum) ? (pogNum <= 0.5 ? 'повышенная' : 'обычная') : '';
         const getArr = (val) => {
             if (!val) return [];
             if (Array.isArray(val)) return val;
@@ -68,14 +80,14 @@ class CatalogManager {
             price: rawProduct.price || 0,
             characteristics: {
                 диапазон: ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['Диапазон измерений'] || ch['диапазон'] || '',
-                погрешность: ch['Погрешность'] || ch['погрешность'] || '',
+                погрешность: formatPogreshnost(pogNum) || ch['Погрешность'] || ch['погрешность'] || '',
                 визирование: ch['Показатель визирования'] || ch['Показатель визирования (второе)'] || ch['показатель визирования'] || '',
                 принципДействия: ch['Принцип действия'] || ch['принцип действия'] || '',
                 спектральныйДиапазон: ch['Спектральный диапазон'] || ch['спектральный диапазон'] || '',
                 'Измеряемые материалы и среды': ch['Измеряемые материалы и среды'] || ch['Измеряемые материалы'] || ch['материалы'] || getArr(ch['Измеряемые материалы']) ,
                 исполнение: ch['Исполнение'] || ch['исполнение'] || getArr(ch['Исполнение']),
                 быстродействие: ch['Быстродействие'] || ch['быстродействие'] || '',
-                точность: ch['Точность'] || ch['точность'] || '',
+                точность: accuracyLabel || ch['Точность'] || ch['точность'] || '',
                 устройствоВизирования: ch['Устройство визирования'] || ch['устройство визирования'] || '',
                 госреестр: (String(ch['Госреестр'] || ch['госреестр'] || '')).toLowerCase().includes('да') ? 'да' : (String(ch['Госреестр'] || ch['госреестр'] || '') ? ch['Госреестр'] : ''),
                 дляМалыхОбъектов: ch['Для малых объектов'] || ch['Малоразмерные объекты'] || ch['Малоразмерные объекты'] || '',
@@ -90,8 +102,6 @@ class CatalogManager {
         this.currentFilters = {
             temperature: [],
             визирование: [],
-            погрешность: [],
-            спектральныйДиапазон: [],
             принципДействия: [],
             материалы: [],
             исполнение: [],
@@ -104,8 +114,6 @@ class CatalogManager {
         this.filterKeyMap = {
             'материалы': 'Измеряемые материалы и среды',
             'визирование': 'визирование',
-            'погрешность': 'погрешность',
-            'спектральныйДиапазон': 'спектральныйДиапазон',
             'принципДействия': 'принципДействия',
             'исполнение': 'исполнение',
             'быстродействие': 'быстродействие',
@@ -647,7 +655,11 @@ class CatalogManager {
                         </div>
                         <div class="characteristic">
                             <span class="characteristic__label">Погрешность:</span>
-                            <span class="characteristic__value">${characteristics.погрешность || 'Не указана'}</span>
+                            <span class="characteristic__value">${this.formatPogreshnost(characteristics.погрешность) || 'Не указана'}</span>
+                        </div>
+                        <div class="characteristic">
+                            <span class="characteristic__label">Точность:</span>
+                            <span class="characteristic__value">${characteristics.точность || 'Не указана'}</span>
                         </div>
                         <div class="characteristic">
                             <span class="characteristic__label">Визирование:</span>
@@ -924,7 +936,7 @@ class CatalogManager {
                         </div>
                         <div class="popup__spec">
                             <strong>Погрешность:</strong>
-                            <span>${characteristics.погрешность ? characteristics.погрешность + '%' : 'Не указана'}</span>
+                            <span>${this.formatPogreshnost(characteristics.погрешность) || 'Не указана'}</span>
                         </div>
                         <div class="popup__spec">
                             <strong>Показатель визирования:</strong>
@@ -1005,6 +1017,17 @@ class CatalogManager {
 
     formatPrice(price) {
         return new Intl.NumberFormat('ru-RU').format(price);
+    }
+
+    formatPogreshnost(val) {
+        if (val === null || val === undefined) return '';
+        const str = String(val).replace(',', '.').replace('%', '').trim();
+        const num = parseFloat(str);
+        if (Number.isFinite(num)) {
+            const normalized = (num > 0 && num < 0.1) ? +(num * 100).toFixed(3) : num;
+            return `${normalized}%`;
+        }
+        return String(val);
     }
 
     showFullDescription(productId) {
