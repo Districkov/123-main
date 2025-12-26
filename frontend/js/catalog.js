@@ -374,45 +374,42 @@ class CatalogManager {
             } else if (e.target.closest('#nextPage')) {
                 this.nextPage();
             }
+
+            // Раскрытие/сворачивание описания товара в карточке
+            const catalogGrid = document.getElementById('catalogGrid');
+            if (catalogGrid) {
+                catalogGrid.addEventListener('click', (e) => {
+                    const toggleBtn = e.target.closest('.product-card__description-toggle');
+                    if (!toggleBtn) return;
+
+                    const card = toggleBtn.closest('.product-card');
+                    if (!card) return;
+
+                    const descEl = card.querySelector('.product-card__description');
+                    if (!descEl) return;
+
+                    const productId = descEl.getAttribute('data-id');
+                    const product = this.getProductById(productId);
+                    if (!product) return;
+
+                    const isExpanded = descEl.getAttribute('data-expanded') === 'true';
+
+                    if (!isExpanded) {
+                        // Сохраняем короткий текст в data-атрибут
+                        descEl.setAttribute('data-short', descEl.textContent);
+                        descEl.textContent = product.description || 'Описание отсутствует';
+                        descEl.setAttribute('data-expanded', 'true');
+                        toggleBtn.textContent = 'Свернуть описание';
+                    } else {
+                        const shortText = descEl.getAttribute('data-short') || '';
+                        descEl.textContent = shortText;
+                        descEl.setAttribute('data-expanded', 'false');
+                        toggleBtn.textContent = 'Показать полностью';
+                    }
+                });
+            }
         });
-
-        // Раскрытие/сворачивание описания товара в карточке
-        const catalogGrid = document.getElementById('catalogGrid');
-        if (catalogGrid) {
-            catalogGrid.addEventListener('click', (e) => {
-                const toggleBtn = e.target.closest('.product-card__description-toggle');
-                if (!toggleBtn) return;
-
-                const card = toggleBtn.closest('.product-card');
-                if (!card) return;
-
-                const descEl = card.querySelector('.product-card__description');
-                if (!descEl) return;
-
-                const productId = descEl.getAttribute('data-id');
-                const product = this.getProductById(productId);
-                if (!product) return;
-
-                const isExpanded = descEl.getAttribute('data-expanded') === 'true';
-
-                if (!isExpanded) {
-                    // Сохраняем короткий текст в data-атрибут
-                    descEl.setAttribute('data-short', descEl.textContent);
-                    descEl.textContent = product.description || 'Описание отсутствует';
-                    descEl.setAttribute('data-expanded', 'true');
-                    toggleBtn.textContent = 'Свернуть описание';
-                } else {
-                    const shortText = descEl.getAttribute('data-short') || '';
-                    descEl.textContent = shortText;
-                    descEl.setAttribute('data-expanded', 'false');
-                    toggleBtn.textContent = 'Показать полностью';
-                }
-            });
-        }
-<<<<<<< HEAD
-=======
     }
->>>>>>> 15d0140aebbde8ac427ad4cc79d9e2ecf9c6afa3
 
     applyFilters() {
         try { console.log('applyFilters start', { currentFilters: this.currentFilters, searchQuery: this.searchQuery, sortBy: this.sortBy, currentPage: this.currentPage }); } catch(e){}
@@ -481,51 +478,63 @@ class CatalogManager {
     }
 
     checkTemperatureFilter(product, selectedRanges) {
-<<<<<<< HEAD
-        // helper: parse product range (fallback to characteristics.диапазон string)
-        const parseProductRange = (p) => {
-            let pMin = Number(p.characteristics.температураМин) || 0;
-            let pMax = Number(p.characteristics.температураМакс) || 0;
-            if ((!pMin && !pMax) && p.characteristics && p.characteristics.диапазон) {
-                const s = String(p.characteristics.диапазон);
-                const m = s.match(/(\d+)\s*-\s*(\d+)/);
-                if (m) { pMin = parseInt(m[1]); pMax = parseInt(m[2]); }
-                else {
-                    const md = s.match(/до\s*(\d+)/i);
-                    if (md) { pMin = 0; pMax = parseInt(md[1]); }
-                    const mo = s.match(/от\s*(\d+)/i);
-                    if (mo) { pMin = parseInt(mo[1]); if (!pMax) pMax = 99999; }
-                }
-            }
-            return { pMin, pMax };
-        };
-
-        const { pMin, pMax } = parseProductRange(product);
-
+        const bounds = this.getTemperatureBounds(product);
+        if (!Number.isFinite(bounds.min) || !Number.isFinite(bounds.max)) return false;
+        
         return selectedRanges.some(range => {
             if (String(range).startsWith('preset:')) {
                 switch (range) {
                     case 'preset:to3000':
-                        return (pMax && pMax <= 3000) || (!pMax && pMax <= 3000);
+                        // All products with max <= 3000
+                        return bounds.max <= 3000;
                     case 'preset:to1800':
-                        if (pMax && pMax <= 1800) return true;
-                        if (pMin === 250 && pMax === 2000) return true;
+                        // Products with max <= 1800 OR (250-2000)
+                        if (bounds.max <= 1800) return true;
+                        if (bounds.min === 250 && bounds.max === 2000) return true;
                         return false;
                     case 'preset:250-2000':
-                        return pMin === 250 && pMax === 2000;
+                        // Only products with exactly 250-2000
+                        return bounds.min === 250 && bounds.max === 2000;
                     case 'preset:200-1200':
-                        if ((pMin === 200 && pMax === 1200) || (pMin === 300 && pMax === 1400)) return true;
+                        // Products with (200-1200) OR (300-1400)
+                        if ((bounds.min === 200 && bounds.max === 1200) || (bounds.min === 300 && bounds.max === 1400)) return true;
                         return false;
                     case 'preset:from0':
-                        return pMin === 0;
+                        // Products starting from 0
+                        return bounds.min === 0;
                     default:
                         return false;
                 }
             } else {
+                // For manual slider ranges
                 const [min, max] = String(range).split('-').map(Number);
-                return (pMin <= max && pMax >= min);
+                if (!Number.isFinite(min) || !Number.isFinite(max)) return true;
+                return bounds.min <= max && bounds.max >= min;
             }
         });
+    }
+
+    // Try to extract numeric temperature bounds even if only a string range is present
+    getTemperatureBounds(product) {
+        const ch = product.characteristics || {};
+        let pMin = Number(ch.температураМин);
+        let pMax = Number(ch.температураМакс);
+
+        // Fallback: parse from text range like "200-1200°С" or "0 ... 3000"
+        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
+            const rangeStr = ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['диапазон'] || '';
+            const nums = String(rangeStr).match(/-?\d+/g);
+            if (nums && nums.length >= 2) {
+                pMin = Number(nums[0]);
+                pMax = Number(nums[1]);
+            }
+        }
+
+        // If still invalid, mark as not filterable
+        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
+            return { min: NaN, max: NaN };
+        }
+        return { min: pMin, max: pMax };
     }
 
     applyPresetTemperature(presetToken) {
@@ -555,14 +564,6 @@ class CatalogManager {
         this.currentFilters.temperature = [presetToken];
         this.currentPage = 1;
         this.applyFilters();
-=======
-        const bounds = this.getTemperatureBounds(product);
-        if (!Number.isFinite(bounds.min) || !Number.isFinite(bounds.max)) return false;
-        return selectedRanges.some(range => {
-            const [min, max] = range.split('-').map(Number);
-            if (!Number.isFinite(min) || !Number.isFinite(max)) return true;
-            return bounds.min <= max && bounds.max >= min;
-        });
     }
 
     // Try to extract numeric temperature bounds even if only a string range is present
@@ -586,7 +587,6 @@ class CatalogManager {
             return { min: NaN, max: NaN };
         }
         return { min: pMin, max: pMax };
->>>>>>> 15d0140aebbde8ac427ad4cc79d9e2ecf9c6afa3
     }
 
     sortProducts(products) {
