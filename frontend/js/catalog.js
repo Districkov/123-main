@@ -168,6 +168,8 @@ class CatalogManager {
         };
 
         tempMin.addEventListener('input', () => {
+            // если пользователь двигает слайдер, сбрасываем пресеты
+            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
             updateSlider();
             this.applyTemperatureFilter();
         });
@@ -179,6 +181,8 @@ class CatalogManager {
                 tempMaxInput.max = extendedMax;
                 // keep current value (was equal to initialMax)
             }
+            // если пользователь двигает слайдер, сбрасываем пресеты
+            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
             updateSlider();
             this.applyTemperatureFilter();
         });
@@ -193,6 +197,7 @@ class CatalogManager {
             if (value >= parseInt(tempMax.value)) value = parseInt(tempMax.value) - 50;
             tempMin.value = value;
             updateSlider();
+            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
             catalog.applyTemperatureFilter();
         });
 
@@ -206,6 +211,7 @@ class CatalogManager {
             if (value <= parseInt(tempMin.value)) value = parseInt(tempMin.value) + 50;
             tempMax.value = value;
             updateSlider();
+            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
             catalog.applyTemperatureFilter();
         });
 
@@ -219,6 +225,8 @@ class CatalogManager {
     }
 
     applyTemperatureFilter() {
+        // If we are programmatically applying a preset, skip the slider handler
+        if (this.__presetApplying) return;
         const tempMin = parseInt(document.getElementById('tempMin').value);
         const tempMax = parseInt(document.getElementById('tempMax').value);
         
@@ -228,6 +236,15 @@ class CatalogManager {
     }
 
     setupEventListeners() {
+        // Preset temperature radios
+        document.querySelectorAll('input[name="tempPreset"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (!e.target.checked) return;
+                const val = e.target.value;
+                this.applyPresetTemperature(val);
+            });
+        });
+
         document.querySelectorAll('.filter-checkbox input').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 const filterType = e.target.getAttribute('data-filter');
@@ -332,9 +349,8 @@ class CatalogManager {
                     descEl.setAttribute('data-expanded', 'false');
                     toggleBtn.textContent = 'Показать полностью';
                 }
-            }
-        });
-    }
+            });
+        }
 
     applyFilters() {
         try { console.log('applyFilters start', { currentFilters: this.currentFilters, searchQuery: this.searchQuery, sortBy: this.sortBy, currentPage: this.currentPage }); } catch(e){}
@@ -384,9 +400,9 @@ class CatalogManager {
                                 if (!has) return false;
                             } else {
                                 if (!matchesSelected(productValue)) {
-                                    return false;
+                            return false;
                                 }
-                            }
+                        }
                     }
                 }
             }
@@ -403,12 +419,79 @@ class CatalogManager {
     }
 
     checkTemperatureFilter(product, selectedRanges) {
+        // helper: parse product range (fallback to characteristics.диапазон string)
+        const parseProductRange = (p) => {
+            let pMin = Number(p.characteristics.температураМин) || 0;
+            let pMax = Number(p.characteristics.температураМакс) || 0;
+            if ((!pMin && !pMax) && p.characteristics && p.characteristics.диапазон) {
+                const s = String(p.characteristics.диапазон);
+                const m = s.match(/(\d+)\s*-\s*(\d+)/);
+                if (m) { pMin = parseInt(m[1]); pMax = parseInt(m[2]); }
+                else {
+                    const md = s.match(/до\s*(\d+)/i);
+                    if (md) { pMin = 0; pMax = parseInt(md[1]); }
+                    const mo = s.match(/от\s*(\d+)/i);
+                    if (mo) { pMin = parseInt(mo[1]); if (!pMax) pMax = 99999; }
+                }
+            }
+            return { pMin, pMax };
+        };
+
+        const { pMin, pMax } = parseProductRange(product);
+
         return selectedRanges.some(range => {
-            const [min, max] = range.split('-').map(Number);
-            const productMin = product.characteristics.температураМин;
-            const productMax = product.characteristics.температураМакс;
-            return productMin <= max && productMax >= min;
+            if (String(range).startsWith('preset:')) {
+                switch (range) {
+                    case 'preset:to3000':
+                        return (pMax && pMax <= 3000) || (!pMax && pMax <= 3000);
+                    case 'preset:to1800':
+                        if (pMax && pMax <= 1800) return true;
+                        if (pMin === 250 && pMax === 2000) return true;
+                        return false;
+                    case 'preset:250-2000':
+                        return pMin === 250 && pMax === 2000;
+                    case 'preset:200-1200':
+                        if ((pMin === 200 && pMax === 1200) || (pMin === 300 && pMax === 1400)) return true;
+                        return false;
+                    case 'preset:from0':
+                        return pMin === 0;
+                    default:
+                        return false;
+                }
+            } else {
+                const [min, max] = String(range).split('-').map(Number);
+                return (pMin <= max && pMax >= min);
+            }
         });
+    }
+
+    applyPresetTemperature(presetToken) {
+        this.__presetApplying = true;
+        try {
+            const tempMinEl = document.getElementById('tempMin');
+            const tempMaxEl = document.getElementById('tempMax');
+            switch (presetToken) {
+                case 'preset:to3000':
+                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
+                case 'preset:to1800':
+                    tempMinEl.value = 0; tempMaxEl.value = 1800; break;
+                case 'preset:250-2000':
+                    tempMinEl.value = 250; tempMaxEl.value = 2000; break;
+                case 'preset:200-1200':
+                    tempMinEl.value = 200; tempMaxEl.value = 1200; break;
+                case 'preset:from0':
+                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
+                default:
+                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
+            }
+            try { tempMinEl.dispatchEvent(new Event('input')); tempMaxEl.dispatchEvent(new Event('input')); } catch (e) {}
+        } finally {
+            this.__presetApplying = false;
+        }
+
+        this.currentFilters.temperature = [presetToken];
+        this.currentPage = 1;
+        this.applyFilters();
     }
 
     sortProducts(products) {
@@ -442,6 +525,8 @@ class CatalogManager {
         document.getElementById('tempMin').value = 0;
         document.getElementById('tempMax').value = 3000;
         this.initTemperatureSlider();
+        // Сброс пресетов радио
+        try { document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false); } catch (e) {}
 
         document.getElementById('searchInput').value = '';
         document.getElementById('sortSelect').value = 'popular';
@@ -628,7 +713,7 @@ class CatalogManager {
         numbersContainer.innerHTML = '';
         
         // Всегда показываем первую страницу
-        this.createPageNumber(1, numbersContainer);
+            this.createPageNumber(1, numbersContainer);
         
         // Определяем диапазон для 5 центральных страниц
         let startPage = Math.max(2, this.currentPage - 2);
@@ -641,7 +726,7 @@ class CatalogManager {
         
         // Добавляем центральные страницы (5 штук)
         for (let i = startPage; i <= endPage; i++) {
-            this.createPageNumber(i, numbersContainer);
+                this.createPageNumber(i, numbersContainer);
         }
         
         // Добавляем многоточие перед последней страницей, если есть разрыв
@@ -1188,15 +1273,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 !chatButton.contains(e.target)) {
                 chatPopup.classList.remove('active');
             }
-        });
+    });
     }
     
     // Отправка формы чата через EmailJS
     const chatForm = document.querySelector('.chat-widget__form');
     if (chatForm) {
         chatForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
+        e.preventDefault();
+        
             const submitButton = this.querySelector('button[type="submit"]');
             const messageDiv = document.getElementById('form-message');
             const chatPopup = document.querySelector('.chat-widget__popup');
@@ -1245,7 +1330,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         messageDiv.textContent = '✅ Заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.';
                         messageDiv.className = 'form-message success';
                     }
-                    this.reset();
+        this.reset();
                     
                     setTimeout(() => {
                         if (chatPopup) chatPopup.classList.remove('active');
