@@ -365,8 +365,10 @@ function openProductPopup(product = null) {
     // Характеристики
     form.characteristics_visibility.value = product.characteristics?.['Показатель визирования'] || '';
     form.characteristics_temperature_range.value = product.characteristics?.['Диапазон измерений температуры'] || '';
-    // Точность (селект)
-    if (form.characteristics_accuracy) form.characteristics_accuracy.value = product.characteristics?.['Точность'] || '';
+    // Погрешность (селект)
+    if (form.characteristics_error) form.characteristics_error.value = product.characteristics?.['Погрешность'] || '';
+    // Спектральный диапазон
+    if (form.characteristics_spectral) form.characteristics_spectral.value = product.characteristics?.['Спектральный диапазон'] || '';
     // Быстродействие (селект)
     if (form.characteristics_speed) form.characteristics_speed.value = product.characteristics?.['Быстродействие'] || '';
     // Исполнение (множественный выбор)
@@ -386,15 +388,11 @@ function openProductPopup(product = null) {
     if (form.characteristics_principle) form.characteristics_principle.value = product.characteristics?.['Принцип действия'] || '';
     // Материалы (множественный выбор)
     if (form.characteristics_materials) {
-      const raw = product.characteristics?.['Измеряемые материалы и среды'];
-      if (Array.isArray(raw)) form.characteristics_materials.value = raw[0] || '';
-      else form.characteristics_materials.value = raw || '';
+      setMultiSelectValues(form.characteristics_materials, product.characteristics?.['Измеряемые материалы и среды']);
     }
     // Особенности применения (множественный выбор)
     if (form.characteristics_features) {
-      const raw = product.characteristics?.['Особенности применения'];
-      if (Array.isArray(raw)) form.characteristics_features.value = raw[0] || '';
-      else form.characteristics_features.value = raw || '';
+      setMultiSelectValues(form.characteristics_features, product.characteristics?.['Особенности применения']);
     }
     form.characteristics_temperature_min.value = product.characteristics?.['Температура мин'] || '';
     form.characteristics_temperature_max.value = product.characteristics?.['Температура макс'] || '';
@@ -501,6 +499,22 @@ function createCompactMultiSelect(select) {
 
   // helper to update label
   updateToggleLabel(select, wrapper);
+}
+
+function setMultiSelectValues(select, values) {
+  if (!select) return;
+  const arr = Array.isArray(values) ? values : (values ? [values] : []);
+  Array.from(select.options).forEach(opt => {
+    opt.selected = arr.includes(opt.value);
+  });
+  const wrapper = select.nextSibling;
+  if (wrapper && wrapper.classList && wrapper.classList.contains('custom-multiselect')) {
+    const checkboxes = wrapper.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach((cb, idx) => {
+      if (select.options[idx]) cb.checked = select.options[idx].selected;
+    });
+    updateToggleLabel(select, wrapper);
+  }
 }
 
 function updateToggleLabel(select, wrapper) {
@@ -787,7 +801,7 @@ function initPopupHandlers() {
       }
       
       const form = e.target;
-      // Множественный выбор для материалов и особенностей применения
+      // Множественный выбор
       function getMultiSelectValues(sel) {
         return sel ? Array.from(sel.selectedOptions).map(opt => opt.value) : [];
       }
@@ -807,15 +821,16 @@ function initPopupHandlers() {
         characteristics: {
           'Показатель визирования': form.characteristics_visibility.value,
           'Диапазон измерений температуры': form.characteristics_temperature_range.value,
-          'Точность': form.characteristics_accuracy ? form.characteristics_accuracy.value : '',
+          'Погрешность': form.characteristics_error ? form.characteristics_error.value : '',
+          'Спектральный диапазон': form.characteristics_spectral ? form.characteristics_spectral.value : '',
           'Быстродействие': form.characteristics_speed ? form.characteristics_speed.value : '',
           'Исполнение': form.characteristics_design ? form.characteristics_design.value : '',
           'Устройство визирования': form.characteristics_sight ? form.characteristics_sight.value : '',
           'Госреестр': form.characteristics_registry ? form.characteristics_registry.value : '',
           'Малоразмерные объекты': form.characteristics_small_objects ? form.characteristics_small_objects.value : '',
           'Принцип действия': form.characteristics_principle ? form.characteristics_principle.value : '',
-          'Измеряемые материалы и среды': form.characteristics_materials ? form.characteristics_materials.value : '',
-          'Особенности применения': form.characteristics_features ? form.characteristics_features.value : '',
+          'Измеряемые материалы и среды': getMultiSelectValues(form.characteristics_materials),
+          'Особенности применения': getMultiSelectValues(form.characteristics_features),
           'Температура мин': form.characteristics_temperature_min.value,
           'Температура макс': form.characteristics_temperature_max.value
         },

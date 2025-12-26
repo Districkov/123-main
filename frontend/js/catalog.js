@@ -1,4 +1,5 @@
 // catalog.js - Версия без закрепленного фильтра и подсказок
+console.log('catalog.js build v5');
 class CatalogManager {
     async loadProducts(force = false) {
         // force — для cache-bust при обновлении
@@ -49,6 +50,18 @@ class CatalogManager {
 
     normalizeProduct(rawProduct) {
         const ch = rawProduct.characteristics || {};
+        const parsePogreshnost = (v) => {
+            const num = parseFloat(String(v).replace(',', '.'));
+            if (!Number.isFinite(num)) return null;
+            // если значение было в долях (0.005), переведем в проценты
+            return num > 0 && num < 0.1 ? +(num * 100).toFixed(3) : num;
+        };
+        const pogNum = parsePogreshnost(ch['Погрешность'] || ch['погрешность']);
+        const formatPogreshnost = (num) => {
+            if (!Number.isFinite(num)) return '';
+            return `${num}%`;
+        };
+        const accuracyLabel = Number.isFinite(pogNum) ? (pogNum <= 0.5 ? 'повышенная' : 'обычная') : '';
         const getArr = (val) => {
             if (!val) return [];
             if (Array.isArray(val)) return val;
@@ -67,14 +80,14 @@ class CatalogManager {
             price: rawProduct.price || 0,
             characteristics: {
                 диапазон: ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['Диапазон измерений'] || ch['диапазон'] || '',
-                погрешность: ch['Погрешность'] || ch['погрешность'] || '',
+                погрешность: formatPogreshnost(pogNum) || ch['Погрешность'] || ch['погрешность'] || '',
                 визирование: ch['Показатель визирования'] || ch['Показатель визирования (второе)'] || ch['показатель визирования'] || '',
                 принципДействия: ch['Принцип действия'] || ch['принцип действия'] || '',
                 спектральныйДиапазон: ch['Спектральный диапазон'] || ch['спектральный диапазон'] || '',
                 'Измеряемые материалы и среды': ch['Измеряемые материалы и среды'] || ch['Измеряемые материалы'] || ch['материалы'] || getArr(ch['Измеряемые материалы']) ,
                 исполнение: ch['Исполнение'] || ch['исполнение'] || getArr(ch['Исполнение']),
                 быстродействие: ch['Быстродействие'] || ch['быстродействие'] || '',
-                точность: ch['Точность'] || ch['точность'] || '',
+                точность: accuracyLabel || ch['Точность'] || ch['точность'] || '',
                 устройствоВизирования: ch['Устройство визирования'] || ch['устройство визирования'] || '',
                 госреестр: (String(ch['Госреестр'] || ch['госреестр'] || '')).toLowerCase().includes('да') ? 'да' : (String(ch['Госреестр'] || ch['госреестр'] || '') ? ch['Госреестр'] : ''),
                 дляМалыхОбъектов: ch['Для малых объектов'] || ch['Малоразмерные объекты'] || ch['Малоразмерные объекты'] || '',
@@ -89,8 +102,6 @@ class CatalogManager {
         this.currentFilters = {
             temperature: [],
             визирование: [],
-            погрешность: [],
-            спектральныйДиапазон: [],
             принципДействия: [],
             материалы: [],
             исполнение: [],
@@ -103,8 +114,6 @@ class CatalogManager {
         this.filterKeyMap = {
             'материалы': 'Измеряемые материалы и среды',
             'визирование': 'визирование',
-            'погрешность': 'погрешность',
-            'спектральныйДиапазон': 'спектральныйДиапазон',
             'принципДействия': 'принципДействия',
             'исполнение': 'исполнение',
             'быстродействие': 'быстродействие',
@@ -130,6 +139,8 @@ class CatalogManager {
         const rangeTrack = document.getElementById('rangeTrack');
 
         if (!tempMin || !tempMax) return;
+        const presetCheckboxes = Array.from(document.querySelectorAll('.temp-range-checkbox'));
+        const self = this;
 
         const initialMax = 3000;
         const extendedMax = 3800;
@@ -165,6 +176,16 @@ class CatalogManager {
                 tempMin.value = max - 50;
                 updateSlider();
             }
+            // Update preset checkboxes: check only when slider matches a preset exactly
+            presetCheckboxes.forEach(cb => {
+                const pMin = parseInt(cb.getAttribute('data-min'));
+                const pMax = parseInt(cb.getAttribute('data-max'));
+                if (pMin === parseInt(tempMin.value) && pMax === parseInt(tempMax.value)) {
+                    cb.checked = true;
+                } else {
+                    cb.checked = false;
+                }
+            });
         };
 
         tempMin.addEventListener('input', () => {
@@ -185,6 +206,43 @@ class CatalogManager {
             document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
             updateSlider();
             this.applyTemperatureFilter();
+        });
+
+        // Preset checkbox handling
+        presetCheckboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                const pMin = parseInt(this.getAttribute('data-min'));
+                const pMax = parseInt(this.getAttribute('data-max'));
+                // When a preset is checked, add its range to currentFilters.temperature
+                if (this.checked) {
+                    // If shift/ctrl is NOT held, clear other presets (allow multi-select if user holds ctrl)
+                    if (!window.event || !window.event.ctrlKey) {
+                        presetCheckboxes.forEach(other => { if (other !== this) other.checked = false; });
+                        self.currentFilters.temperature = [];
+                    }
+                    const rangeStr = `${pMin}-${pMax}`;
+                    if (!self.currentFilters.temperature.includes(rangeStr)) {
+                        self.currentFilters.temperature.push(rangeStr);
+                    }
+                    // set slider to this preset
+                    tempMin.value = pMin;
+                    tempMax.value = pMax;
+                    updateSlider();
+                    self.applyFilters();
+                } else {
+                    // remove range
+                    const rangeStr = `${pMin}-${pMax}`;
+                    self.currentFilters.temperature = self.currentFilters.temperature.filter(r => r !== rangeStr);
+                    // if no presets remain checked, set slider to full range
+                    const anyChecked = presetCheckboxes.some(x => x.checked);
+                    if (!anyChecked) {
+                        tempMin.value = 0;
+                        tempMax.value = parseInt(tempMax.max) || 3000;
+                        updateSlider();
+                    }
+                    self.applyFilters();
+                }
+            });
         });
 
         tempMinInput.addEventListener('input', function() {
@@ -351,6 +409,10 @@ class CatalogManager {
                 }
             });
         }
+<<<<<<< HEAD
+=======
+    }
+>>>>>>> 15d0140aebbde8ac427ad4cc79d9e2ecf9c6afa3
 
     applyFilters() {
         try { console.log('applyFilters start', { currentFilters: this.currentFilters, searchQuery: this.searchQuery, sortBy: this.sortBy, currentPage: this.currentPage }); } catch(e){}
@@ -419,6 +481,7 @@ class CatalogManager {
     }
 
     checkTemperatureFilter(product, selectedRanges) {
+<<<<<<< HEAD
         // helper: parse product range (fallback to characteristics.диапазон string)
         const parseProductRange = (p) => {
             let pMin = Number(p.characteristics.температураМин) || 0;
@@ -492,6 +555,38 @@ class CatalogManager {
         this.currentFilters.temperature = [presetToken];
         this.currentPage = 1;
         this.applyFilters();
+=======
+        const bounds = this.getTemperatureBounds(product);
+        if (!Number.isFinite(bounds.min) || !Number.isFinite(bounds.max)) return false;
+        return selectedRanges.some(range => {
+            const [min, max] = range.split('-').map(Number);
+            if (!Number.isFinite(min) || !Number.isFinite(max)) return true;
+            return bounds.min <= max && bounds.max >= min;
+        });
+    }
+
+    // Try to extract numeric temperature bounds even if only a string range is present
+    getTemperatureBounds(product) {
+        const ch = product.characteristics || {};
+        let pMin = Number(ch.температураМин);
+        let pMax = Number(ch.температураМакс);
+
+        // Fallback: parse from text range like "200-1200°С" or "0 ... 3000"
+        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
+            const rangeStr = ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['диапазон'] || '';
+            const nums = String(rangeStr).match(/-?\d+/g);
+            if (nums && nums.length >= 2) {
+                pMin = Number(nums[0]);
+                pMax = Number(nums[1]);
+            }
+        }
+
+        // If still invalid, mark as not filterable
+        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
+            return { min: NaN, max: NaN };
+        }
+        return { min: pMin, max: pMax };
+>>>>>>> 15d0140aebbde8ac427ad4cc79d9e2ecf9c6afa3
     }
 
     sortProducts(products) {
@@ -658,7 +753,11 @@ class CatalogManager {
                         </div>
                         <div class="characteristic">
                             <span class="characteristic__label">Погрешность:</span>
-                            <span class="characteristic__value">${characteristics.погрешность || 'Не указана'}</span>
+                            <span class="characteristic__value">${this.formatPogreshnost(characteristics.погрешность) || 'Не указана'}</span>
+                        </div>
+                        <div class="characteristic">
+                            <span class="characteristic__label">Точность:</span>
+                            <span class="characteristic__value">${characteristics.точность || 'Не указана'}</span>
                         </div>
                         <div class="characteristic">
                             <span class="characteristic__label">Визирование:</span>
@@ -935,7 +1034,7 @@ class CatalogManager {
                         </div>
                         <div class="popup__spec">
                             <strong>Погрешность:</strong>
-                            <span>${characteristics.погрешность ? characteristics.погрешность + '%' : 'Не указана'}</span>
+                            <span>${this.formatPogreshnost(characteristics.погрешность) || 'Не указана'}</span>
                         </div>
                         <div class="popup__spec">
                             <strong>Показатель визирования:</strong>
@@ -1016,6 +1115,17 @@ class CatalogManager {
 
     formatPrice(price) {
         return new Intl.NumberFormat('ru-RU').format(price);
+    }
+
+    formatPogreshnost(val) {
+        if (val === null || val === undefined) return '';
+        const str = String(val).replace(',', '.').replace('%', '').trim();
+        const num = parseFloat(str);
+        if (Number.isFinite(num)) {
+            const normalized = (num > 0 && num < 0.1) ? +(num * 100).toFixed(3) : num;
+            return `${normalized}%`;
+        }
+        return String(val);
     }
 
     showFullDescription(productId) {

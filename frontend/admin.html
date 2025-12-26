@@ -138,10 +138,11 @@
                 </div>
 
                 <div class="form-group">
-                  <label>Точность:</label>
-                  <select name="characteristics_accuracy">
-                    <option value="обычная (±1%)">Обычная (±1%)</option>
-                    <option value="повышенная (±0,5%)">Повышенная (±0,5%)</option>
+                  <label for="characteristics_error">Погрешность:</label>
+                  <select id="characteristics_error" name="characteristics_error">
+                    <option value="0.5">0,5%</option>
+                    <option value="1">1%</option>
+                    <option value="2">2%</option>
                   </select>
                 </div>
 
@@ -166,6 +167,17 @@
                     <option value="токовый выход 0-20 мА">Токовый выход 0-20 мА</option>
                     <option value="токовый выход 4-20 мА">Токовый выход 4-20 мА</option>
                     <option value="с выходом на СОМ-порт">С выходом на СОМ-порт</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="characteristics_spectral">Спектральный диапазон:</label>
+                  <select id="characteristics_spectral" name="characteristics_spectral">
+                    <option value="0.9-4.5 мкм">0,9-4,5 мкм</option>
+                    <option value="0.9-1.6 мкм">0,9-1,6 мкм</option>
+                    <option value="0.9-1.1 мкм">0,9-1,1 мкм</option>
+                    <option value="8-14 мкм">8-14 мкм</option>
+                    <option value="0.6-0.9 и 0.9-1.1 мкм">0,6-0,9 и 0,9-1,1 мкм</option>
                   </select>
                 </div>
 
@@ -205,7 +217,7 @@
 
                 <div class="form-group">
                   <label>Измеряемые материалы и среды:</label>
-                    <select name="characteristics_materials">
+                    <select name="characteristics_materials" multiple>
                       <option value="железо, сталь">Железо, сталь</option>
                       <option value="алюминий и сплавы">Алюминий и сплавы</option>
                       <option value="цветные металлы (кроме Al) и сплавы">Цветные металлы (кроме Al) и сплавы</option>
@@ -218,7 +230,7 @@
 
                 <div class="form-group">
                   <label>Особенности применения:</label>
-                    <select name="characteristics_features">
+                    <select name="characteristics_features" multiple>
 
                       <option value="для вакуумных печей с кварцевым окном">Для вакуумных печей с кварцевым окном</option>
                       <option value="для вакуумных печей со стеклянным окном">Для вакуумных печей со стеклянным окном</option>
