@@ -108,7 +108,8 @@ class CatalogManager {
             быстродействие: [],
             точность: [],
             устройствоВизирования: [],
-            госреестр: []
+            госреестр: [],
+            дляМалыхОбъектов: []
         };
         // Map UI filter keys (data-filter values) to normalized characteristic keys
         this.filterKeyMap = {
@@ -444,6 +445,12 @@ class CatalogManager {
                         if (product.characteristics[filterType] !== 'да') {
                             return false;
                         }
+                    } else if (filterType === 'дляМалыхОбъектов') {
+                        // For small objects filter, check if characteristic contains "да" or similar positive value
+                        const val = String(product.characteristics[filterType] || '').toLowerCase();
+                        if (!val.includes('да') && !val.includes('позволяет')) {
+                            return false;
+                        }
                     } else {
                             const mappedKey = this.filterKeyMap[filterType] || filterType;
                             const productValue = product.characteristics[mappedKey];
@@ -637,7 +644,8 @@ class CatalogManager {
             быстродействие: [],
             точность: [],
             устройствоВизирования: [],
-            госреестр: []
+            госреестр: [],
+            дляМалыхОбъектов: []
         };
         this.searchQuery = '';
         this.sortBy = 'popular';
@@ -705,14 +713,12 @@ class CatalogManager {
         }
         grid.innerHTML = paginatedProducts.map(product => {
             const characteristics = product.characteristics || {};
-            // Обрезка описания до 3-4 строк (по символам, если нет \n)
+            // Обрезка описания до 15 символов с троеточием
             let shortDesc = product.description || '';
             if (!shortDesc) shortDesc = 'Описание отсутствует';
-            let descLines = shortDesc.split('\n');
-            if (descLines.length > 4) descLines = descLines.slice(0, 4);
-            shortDesc = descLines.join(' ');
-            if (shortDesc.length > 180) shortDesc = shortDesc.slice(0, 180);
-            if (shortDesc.length < (product.description || '').length) shortDesc += '...';
+            if (shortDesc.length > 15) {
+                shortDesc = shortDesc.slice(0, 15) + '...';
+            }
             // Исполнение (множественный выбор)
             let exec = Array.isArray(characteristics.исполнение) ? characteristics.исполнение.join(', ') : (characteristics.исполнение || 'Не указано');
             // Галерея изображений
@@ -941,6 +947,7 @@ class CatalogManager {
                 const shortSpanF = descNodeForce.querySelector('.short-desc');
                 const fullSpanF = descNodeForce.querySelector('.full-desc');
                 const btnF = descNodeForce.querySelector('button.btn--link');
+                // Already set in createPopupContent, but ensure it persists
                 if (fullSpanF) fullSpanF.style.display = 'block';
                 if (shortSpanF) shortSpanF.style.display = 'none';
                 if (btnF) { btnF.textContent = 'Свернуть описание'; btnF.setAttribute('aria-expanded', 'true'); }
@@ -966,14 +973,10 @@ class CatalogManager {
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         };
         const characteristics = product.characteristics || {};
-        // Обрезка описания до 3-4 строк
+        // В popup показываем полное описание
         let shortDesc = product.description || '';
         if (!shortDesc) shortDesc = 'Описание отсутствует';
-        let descLines = shortDesc.split('\n');
-        if (descLines.length > 4) descLines = descLines.slice(0, 4);
-        shortDesc = descLines.join(' ');
-        if (shortDesc.length > 300) shortDesc = shortDesc.slice(0, 300);
-        if (shortDesc.length < (product.description || '').length) shortDesc += '...';
+        // Для popup используем полное описание, не обрезаем
         let exec = Array.isArray(characteristics.исполнение) ? characteristics.исполнение.join(', ') : (characteristics.исполнение || 'Не указано');
         let materials = Array.isArray(characteristics['Измеряемые материалы и среды']) ? characteristics['Измеряемые материалы и среды'].join(', ') : (characteristics['Измеряемые материалы и среды'] || 'Не указаны');
         let features = Array.isArray(characteristics['Особенности применения']) ? characteristics['Особенности применения'].join(', ') : (characteristics['Особенности применения'] || 'Не указаны');
@@ -1019,9 +1022,9 @@ class CatalogManager {
                     <h1>${product.title || 'Без названия'}</h1>
                     <div class="popup__price">${this.formatPrice(product.price)} ₽</div>
                     <p class="popup__description">
-                        <span class="short-desc" style="display:inline">${shortDescEsc}</span>
-                        <span class="full-desc" style="display:none">${fullDesc}</span>
-                        <button class="btn btn--link" onclick="catalog.showFullDescription('${product.id}')" aria-expanded="false">Развернуть описание</button>
+                        <span class="short-desc" style="display:none">${shortDescEsc}</span>
+                        <span class="full-desc" style="display:block">${fullDesc}</span>
+                        <button class="btn btn--link" onclick="catalog.showFullDescription('${product.id}')" aria-expanded="true">Свернуть описание</button>
                     </p>
                     <div class="popup__specs">
                         <div class="popup__spec">

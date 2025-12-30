@@ -235,6 +235,19 @@ module.exports = {
   getArticleById,
   createArticle,
   updateArticle,
-  deleteArticle
-  ,deleteAllArticles
+  deleteArticle,
+  deleteAllArticles,
+  // reinit
+  reinitFromJson: function() {
+    try {
+      deleteAllProducts();
+      deleteAllArticles();
+      seedFromJsonIfEmpty();
+      console.log('Database reinitialized from JSON files');
+      return { success: true, message: 'Database reinitialized from JSON' };
+    } catch (err) {
+      console.error('Database reinit failed:', err);
+      return { success: false, error: err.message };
+    }
+  }
 };

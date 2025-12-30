@@ -141,6 +141,21 @@ app.use('/admin', requireAdminToken, require('./routes/admin'));
 // Auth routes (require auth)
 app.use('/auth', requireAdminToken, require('./routes/auth'));
 
+// Admin reinit endpoint (protected)
+app.post('/admin/reinit-db', requireAdminToken, (req, res) => {
+  try {
+    const db = require('./db');
+    if (db && typeof db.reinitFromJson === 'function') {
+      const result = db.reinitFromJson();
+      return res.json(result);
+    }
+    return res.status(500).json({ success: false, error: 'Database module not available' });
+  } catch (err) {
+    console.error('Reinit DB error:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Serve uploaded files (images) from backend/uploads at /uploads
 app.use('/uploads', express.static(path.join(backendRoot, 'uploads')));
 

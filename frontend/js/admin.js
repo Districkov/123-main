@@ -699,6 +699,7 @@ async function editArticle(id) {
 function initPopupHandlers() {
   const addProductBtn = document.getElementById('add-product');
   const addArticleBtn = document.getElementById('add-article');
+  const reinitDbBtn = document.getElementById('reinit-db-btn');
   const closeProductPopupBtn = document.getElementById('close-product-popup');
   const closeArticlePopupBtn = document.getElementById('close-article-popup');
   const cancelProductPopupBtn = document.getElementById('cancel-edit-product-popup');
@@ -725,6 +726,44 @@ function initPopupHandlers() {
         return;
       }
       openArticlePopup();
+    });
+  }
+
+  if (reinitDbBtn) {
+    reinitDbBtn.addEventListener('click', async () => {
+      if (!isAuthenticated) {
+        showMessage('Требуется авторизация', 'error');
+        return;
+      }
+      if (!confirm('Вы уверены? Это перезагрузит все товары из обновленного JSON файла. Несохраненные изменения будут потеряны.')) {
+        return;
+      }
+      try {
+        reinitDbBtn.disabled = true;
+        reinitDbBtn.textContent = '⏳ Переинициализация...';
+        const headers = authHeaders();
+        const response = await fetch('/admin/reinit-db', {
+          method: 'POST',
+          headers: headers
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const result = await response.json();
+        if (result.success) {
+          showMessage('БД успешно обновлена из JSON', 'success');
+          await loadProducts();
+          await loadArticles();
+        } else {
+          showMessage('Ошибка: ' + (result.error || 'Не удалось обновить БД'), 'error');
+        }
+      } catch (error) {
+        console.error('Reinit DB error:', error);
+        showMessage('Ошибка при обновлении БД: ' + error.message, 'error');
+      } finally {
+        reinitDbBtn.disabled = false;
+        reinitDbBtn.textContent = '🔄 Обновить БД';
+      }
     });
   }
 
