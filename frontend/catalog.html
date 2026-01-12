@@ -63,53 +63,34 @@
 
                     <!-- Группы фильтров -->
                     <div class="filters__groups">
-                        <!-- Диапазон температур с ползунком -->
+                        <!-- Диапазон температур (только один выбор) -->
                         <div class="filter-group">
                             <h3>Диапазон температур (°C)</h3>
-                            <div class="filter-options">
-                                <div class="temp-presets">
-                                    <label class="filter-radio">
-                                        <input type="radio" name="tempPreset" value="preset:to3000">
-                                        <span>до 3000 °С</span>
-                                    </label>
-                                    <label class="filter-radio">
-                                        <input type="radio" name="tempPreset" value="preset:to1800">
-                                        <span>до 1800 °С</span>
-                                    </label>
-                                    <label class="filter-radio">
-                                        <input type="radio" name="tempPreset" value="preset:250-2000">
-                                        <span>250 - 2000 °С</span>
-                                    </label>
-                                    <label class="filter-radio">
-                                        <input type="radio" name="tempPreset" value="preset:200-1200">
-                                        <span>200 - 1200 °С</span>
-                                    </label>
-                                    <label class="filter-radio">
-                                        <input type="radio" name="tempPreset" value="preset:from0">
-                                        <span>от 0 °С</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="temperature-range">
-                                <div class="range-slider">
-                                    <div class="range-track" id="rangeTrack"></div>
-                                    <input type="range" id="tempMin" class="range-min" min="0" max="3000" value="0" step="50" title="Минимальная температура">
-                                    <input type="range" id="tempMax" class="range-max" min="0" max="3000" value="3000" step="50" title="Максимальная температура">
-                                </div>
-                                <div class="range-values">
-                                    <span id="minValue">0°C</span>
-                                    <span id="maxValue">3000°C</span>
-                                </div>
-                                <div class="range-inputs">
-                                    <div class="range-input">
-                                        <label for="tempMinInput">От:</label>
-                                        <input type="number" id="tempMinInput" value="0" min="0" max="3000" title="Минимальная температура (введи число)">
-                                    </div>
-                                    <div class="range-input">
-                                        <label for="tempMaxInput">До:</label>
-                                        <input type="number" id="tempMaxInput" value="3000" min="0" max="3000" title="Максимальная температура (введи число)">
-                                    </div>
-                                </div>
+                            <div class="filter-options temp-presets">
+                                <label class="filter-radio">
+                                    <input type="radio" name="tempPreset" value="preset:none" checked>
+                                    <span>Не выбрано</span>
+                                </label>
+                                <label class="filter-radio">
+                                    <input type="radio" name="tempPreset" value="preset:to3000">
+                                    <span>до 3000 °С</span>
+                                </label>
+                                <label class="filter-radio">
+                                    <input type="radio" name="tempPreset" value="preset:to1800">
+                                    <span>до 1800 °С</span>
+                                </label>
+                                <label class="filter-radio">
+                                    <input type="radio" name="tempPreset" value="preset:250-2000">
+                                    <span>250 - 2000 °С</span>
+                                </label>
+                                <label class="filter-radio">
+                                    <input type="radio" name="tempPreset" value="preset:200-1200">
+                                    <span>200 - 1200 °С</span>
+                                </label>
+                                <label class="filter-radio">
+                                    <input type="radio" name="tempPreset" value="preset:from0">
+                                    <span>от 0 °С</span>
+                                </label>
                             </div>
                         </div>
 
@@ -147,6 +128,41 @@
                                 <label class="filter-checkbox">
                                     <input type="checkbox" value="оптический" data-filter="принципДействия">
                                     <span>Оптический</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Особенности применения -->
+                        <div class="filter-group">
+                            <h3>Особенности применения</h3>
+                            <div class="filter-options">
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="для вакуумных печей с кварцевым окном" data-filter="особенности">
+                                    <span>Для вакуумных печей с кварцевым окном</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="для вакуумных печей со стеклянным окном" data-filter="особенности">
+                                    <span>Для вакуумных печей со стеклянным окном</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="для нагревательных печей" data-filter="особенности">
+                                    <span>Для нагревательных печей</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="для прокатных станов" data-filter="особенности">
+                                    <span>Для прокатных станов</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="для лабораторных исследований" data-filter="особенности">
+                                    <span>Для лабораторных исследований</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="для работы при t > 50°C" data-filter="особенности">
+                                    <span>Для работы при t > 50°C</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="для измерений через пламя" data-filter="особенности">
+                                    <span>Для измерений через пламя</span>
                                 </label>
                             </div>
                         </div>
@@ -191,42 +207,29 @@
                             <h3>Исполнение</h3>
                             <div class="filter-options">
                                 <label class="filter-checkbox">
-                                    <input type="checkbox" value="Переносной" data-filter="исполнение">
-                                    <span>Переносной</span>
+                                    <input type="checkbox" value="переносной (базовый комплект)" data-filter="исполнение">
+                                    <span>переносной (базовый комплект)</span>
                                 </label>
-                                <div class="filter-nested">
-                                    <label class="filter-checkbox nested-item">
-                                        <input type="checkbox" value="Базовый комплект" data-filter="исполнение">
-                                        <span>базовый комплект</span>
-                                    </label>
-                                    <label class="filter-checkbox nested-item">
-                                        <input type="checkbox" value="с матобработкой" data-filter="исполнение">
-                                        <span>с матобработкой</span>
-                                    </label>
-                                    <label class="filter-checkbox nested-item">
-                                        <input type="checkbox" value="с памятью" data-filter="исполнение">
-                                        <span>с памятью</span>
-                                    </label>
-                                </div>
-
                                 <label class="filter-checkbox">
-                                    <input type="checkbox" value="Стационарный" data-filter="исполнение">
-                                    <span>Стационарный</span>
+                                    <input type="checkbox" value="переносной (с матобработкой)" data-filter="исполнение">
+                                    <span>переносной (с матобработкой)</span>
                                 </label>
-                                <div class="filter-nested">
-                                    <label class="filter-checkbox nested-item">
-                                        <input type="checkbox" value="токовый выход 0-20 мА" data-filter="исполнение">
-                                        <span>токовый выход 0-20 мА</span>
-                                    </label>
-                                    <label class="filter-checkbox nested-item">
-                                        <input type="checkbox" value="токовый выход 4-20 мА" data-filter="исполнение">
-                                        <span>токовый выход 4-20 мА</span>
-                                    </label>
-                                    <label class="filter-checkbox nested-item">
-                                        <input type="checkbox" value="с выходом на СОМ-порт" data-filter="исполнение">
-                                        <span>с выходом на СОМ-порт</span>
-                                    </label>
-                                </div>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="переносной (с памятью на 510 результатов)" data-filter="исполнение">
+                                    <span>переносной (с памятью на 510 результатов)</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="стационарный (с токовым выходом 0-20 мА)" data-filter="исполнение">
+                                    <span>стационарный (с токовым выходом 0-20 мА)</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="стационарный (с токовым выходом 4-20 мА)" data-filter="исполнение">
+                                    <span>стационарный (с токовым выходом 4-20 мА)</span>
+                                </label>
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" value="стационарный (с выходом на компьютер)" data-filter="исполнение">
+                                    <span>стационарный (с выходом на компьютер)</span>
+                                </label>
                             </div>
                         </div>
 

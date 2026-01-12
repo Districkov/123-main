@@ -3,6 +3,8 @@ const fs = require('fs');
 const Database = require('better-sqlite3');
 
 const dbFile = path.join(__dirname, 'data', 'app.db');
+const productsJsonFile = path.join(__dirname, 'data', 'products.json');
+const articlesJsonFile = path.join(__dirname, 'data', 'articles.json');
 const dbDir = path.dirname(dbFile);
 if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 
@@ -66,7 +68,9 @@ function createProduct(p) {
   const now = new Date().toISOString();
   const stmt = db.prepare(`INSERT INTO products (id, sku, category, title, photos, price, quantity, description, characteristics, seo, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   stmt.run(id, JSON.stringify(p.sku || ''), p.category || '', p.title || '', JSON.stringify(p.photos || []), p.price || 0, p.quantity || 0, p.description || '', JSON.stringify(p.characteristics || {}), JSON.stringify(p.seo || {}), now);
-  return getProductById(id);
+  const created = getProductById(id);
+  persistProductsToJson();
+  return created;
 }
 
 function updateProduct(id, p) {
@@ -79,13 +83,16 @@ function updateProduct(id, p) {
   };
   const stmt = db.prepare(`UPDATE products SET sku = ?, category = ?, title = ?, photos = ?, price = ?, quantity = ?, description = ?, characteristics = ?, seo = ?, updatedAt = ? WHERE id = ?`);
   stmt.run(JSON.stringify(merged.sku || ''), merged.category || '', merged.title || '', JSON.stringify(merged.photos || []), merged.price || 0, merged.quantity || 0, merged.description || '', JSON.stringify(merged.characteristics || {}), JSON.stringify(merged.seo || {}), now, id);
-  return getProductById(id);
+  const updated = getProductById(id);
+  persistProductsToJson();
+  return updated;
 }
 
 function deleteProduct(id) {
   const existing = getProductById(id);
   if (!existing) return null;
   db.prepare(`DELETE FROM products WHERE id = ?`).run(String(id));
+  persistProductsToJson();
   return existing;
 }
 
@@ -110,7 +117,9 @@ function createArticle(a) {
   const now = new Date().toISOString();
   db.prepare(`INSERT INTO articles (id, category, title, excerpt, image, date, content, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
     .run(id, a.category || '', a.title || '', a.excerpt || '', a.image || '', a.date || '', JSON.stringify(a.content || []), now);
-  return getArticleById(id);
+  const created = getArticleById(id);
+  persistArticlesToJson();
+  return created;
 }
 
 function updateArticle(id, a) {
@@ -120,13 +129,16 @@ function updateArticle(id, a) {
   const now = new Date().toISOString();
   db.prepare(`UPDATE articles SET category = ?, title = ?, excerpt = ?, image = ?, date = ?, content = ?, updatedAt = ? WHERE id = ?`)
     .run(merged.category || '', merged.title || '', merged.excerpt || '', merged.image || '', merged.date || '', JSON.stringify(merged.content || []), now, id);
-  return getArticleById(id);
+  const updated = getArticleById(id);
+  persistArticlesToJson();
+  return updated;
 }
 
 function deleteArticle(id) {
   const existing = getArticleById(id);
   if (!existing) return null;
   db.prepare(`DELETE FROM articles WHERE id = ?`).run(String(id));
+  persistArticlesToJson();
   return existing;
 }
 
@@ -149,11 +161,47 @@ function normalizeProductRow(row) {
     price: row.price,
     quantity: row.quantity,
     description: row.description,
-    characteristics: tryParseJSON(row.characteristics) || {},
+    characteristics: normalizeCharacteristics(tryParseJSON(row.characteristics) || {}),
     seo: tryParseJSON(row.seo) || {},
     createdAt: row.createdAt,
     updatedAt: row.updatedAt
   };
+}
+
+// Normalize characteristic values to unified formats for filtering/UX
+function normalizeCharacteristics(ch) {
+  if (!ch || typeof ch !== 'object') return {};
+
+  const normalized = { ...ch };
+
+  // Госреестр: normalize to 'да' / 'нет'
+  if (normalized['Госреестр'] !== undefined) {
+    const val = String(normalized['Госреестр']).toLowerCase();
+    normalized['Госреестр'] = (val.includes('да') || val.includes('внес')) ? 'да' : 'нет';
+  }
+
+  // Малоразмерные объекты: normalize to 'да' / 'нет'
+  if (normalized['Малоразмерные объекты'] !== undefined) {
+    const val = String(normalized['Малоразмерные объекты']).toLowerCase();
+    const isYes = val.includes('да') || val.includes('позволяет') || val.includes('yes');
+    const isNo = val.includes('нет') || val.includes('не позволяет');
+    normalized['Малоразмерные объекты'] = isYes ? 'да' : (isNo ? 'нет' : normalized['Малоразмерные объекты']);
+  }
+
+  // Измеряемые материалы и особенности — всегда массивы
+  ['Измеряемые материалы и среды', 'Особенности применения'].forEach(key => {
+    if (normalized[key] !== undefined) {
+      if (Array.isArray(normalized[key])) {
+        normalized[key] = normalized[key].filter(Boolean);
+      } else if (normalized[key]) {
+        normalized[key] = [normalized[key]].filter(Boolean);
+      } else {
+        normalized[key] = [];
+      }
+    }
+  });
+
+  return normalized;
 }
 
 function normalizeArticleRow(row) {
@@ -218,6 +266,24 @@ function seedFromJsonIfEmpty() {
     }
   } catch (err) {
     console.error('Database seed failed:', err);
+  }
+}
+
+function persistProductsToJson() {
+  try {
+    const rows = db.prepare(`SELECT * FROM products ORDER BY rowid DESC`).all().map(normalizeProductRow);
+    fs.writeFileSync(productsJsonFile, JSON.stringify(rows, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to persist products to JSON:', err);
+  }
+}
+
+function persistArticlesToJson() {
+  try {
+    const rows = db.prepare(`SELECT * FROM articles ORDER BY rowid DESC`).all().map(normalizeArticleRow);
+    fs.writeFileSync(articlesJsonFile, JSON.stringify(rows, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Failed to persist articles to JSON:', err);
   }
 }
 

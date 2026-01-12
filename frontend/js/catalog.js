@@ -50,6 +50,13 @@ class CatalogManager {
 
     normalizeProduct(rawProduct) {
         const ch = rawProduct.characteristics || {};
+        const normalizeYesNo = (v) => {
+            const s = String(v || '').toLowerCase();
+            if (!s) return '';
+            if (s.includes('да') || s.includes('внес') || s.includes('yes') || s.includes('позвол')) return 'да';
+            if (s.includes('нет') || s.includes('не ')) return 'нет';
+            return s;
+        };
         const parsePogreshnost = (v) => {
             const num = parseFloat(String(v).replace(',', '.'));
             if (!Number.isFinite(num)) return null;
@@ -69,6 +76,10 @@ class CatalogManager {
         };
         const photos = rawProduct.photos && rawProduct.photos.length ? rawProduct.photos : (rawProduct.photo ? [rawProduct.photo] : []);
         const sku = rawProduct.sku;
+        const materialsArr = getArr(ch['Измеряемые материалы и среды'] || ch['Измеряемые материалы'] || ch['материалы']);
+        const featuresArr = getArr(ch['Особенности применения'] || ch['особенности применения']);
+        const execArr = getArr(ch['Исполнение'] || ch['исполнение']);
+
         return {
             id: rawProduct.id || (rawProduct._id || Date.now().toString()),
             sku: Array.isArray(sku) ? sku : (sku ? String(sku) : ''),
@@ -84,13 +95,14 @@ class CatalogManager {
                 визирование: ch['Показатель визирования'] || ch['Показатель визирования (второе)'] || ch['показатель визирования'] || '',
                 принципДействия: ch['Принцип действия'] || ch['принцип действия'] || '',
                 спектральныйДиапазон: ch['Спектральный диапазон'] || ch['спектральный диапазон'] || '',
-                'Измеряемые материалы и среды': ch['Измеряемые материалы и среды'] || ch['Измеряемые материалы'] || ch['материалы'] || getArr(ch['Измеряемые материалы']) ,
-                исполнение: ch['Исполнение'] || ch['исполнение'] || getArr(ch['Исполнение']),
+                'Измеряемые материалы и среды': materialsArr,
+                исполнение: execArr,
                 быстродействие: ch['Быстродействие'] || ch['быстродействие'] || '',
                 точность: accuracyLabel || ch['Точность'] || ch['точность'] || '',
                 устройствоВизирования: ch['Устройство визирования'] || ch['устройство визирования'] || '',
-                госреестр: (String(ch['Госреестр'] || ch['госреестр'] || '')).toLowerCase().includes('да') ? 'да' : (String(ch['Госреестр'] || ch['госреестр'] || '') ? ch['Госреестр'] : ''),
-                дляМалыхОбъектов: ch['Для малых объектов'] || ch['Малоразмерные объекты'] || ch['Малоразмерные объекты'] || '',
+                госреестр: normalizeYesNo(ch['Госреестр'] || ch['госреестр']),
+                дляМалыхОбъектов: normalizeYesNo(ch['Для малых объектов'] || ch['Малоразмерные объекты'] || ch['Малоразмерные объекты']),
+                особенности: featuresArr,
                 температураМин: parseInt(ch['Температура мин']) || parseInt(ch['температура мин']) || 0,
                 температураМакс: parseInt(ch['Температура макс']) || parseInt(ch['температура макс']) || 0
             }
@@ -109,7 +121,8 @@ class CatalogManager {
             точность: [],
             устройствоВизирования: [],
             госреестр: [],
-            дляМалыхОбъектов: []
+            дляМалыхОбъектов: [],
+            особенности: []
         };
         // Map UI filter keys (data-filter values) to normalized characteristic keys
         this.filterKeyMap = {
@@ -121,6 +134,7 @@ class CatalogManager {
             'точность': 'точность',
             'устройствоВизирования': 'устройствоВизирования',
             'госреестр': 'госреестр',
+            'особенности': 'особенности',
             'temperature': 'temperature'
         };
         this.searchQuery = '';
@@ -131,171 +145,18 @@ class CatalogManager {
     }
 
     initTemperatureSlider() {
-        const tempMin = document.getElementById('tempMin');
-        const tempMax = document.getElementById('tempMax');
-        const tempMinInput = document.getElementById('tempMinInput');
-        const tempMaxInput = document.getElementById('tempMaxInput');
-        const minValue = document.getElementById('minValue');
-        const maxValue = document.getElementById('maxValue');
-        const rangeTrack = document.getElementById('rangeTrack');
-
-        if (!tempMin || !tempMax) return;
-        const presetCheckboxes = Array.from(document.querySelectorAll('.temp-range-checkbox'));
-        const self = this;
-
-        const initialMax = 3000;
-        const extendedMax = 3800;
-
-        const updateSlider = () => {
-            const min = parseInt(tempMin.value);
-            const max = parseInt(tempMax.value);
-            
-            minValue.textContent = min + '°C';
-            maxValue.textContent = max + '°C';
-            
-            tempMinInput.value = min;
-            tempMaxInput.value = max;
-            
-            // Update track gradient - полный градиент от синего к красному
-            // choose denominator depending on whether we are extended
-            const denom = (parseInt(tempMax.max) || initialMax);
-            const minPercent = (min / denom) * 100;
-            const maxPercent = (max / denom) * 100;
-            
-            rangeTrack.style.background = `linear-gradient(90deg, 
-                #ddd 0%, 
-                #ddd ${minPercent}%, 
-                #3498db ${minPercent}%, 
-                #2ecc71 ${minPercent + (maxPercent - minPercent) * 0.25}%, 
-                #f1c40f ${minPercent + (maxPercent - minPercent) * 0.5}%, 
-                #e67e22 ${minPercent + (maxPercent - minPercent) * 0.75}%, 
-                #e74c3c ${maxPercent}%, 
-                #ddd ${maxPercent}%, 
-                #ddd 100%)`;
-            
-            if (min >= max) {
-                tempMin.value = max - 50;
-                updateSlider();
-            }
-            // Update preset checkboxes: check only when slider matches a preset exactly
-            presetCheckboxes.forEach(cb => {
-                const pMin = parseInt(cb.getAttribute('data-min'));
-                const pMax = parseInt(cb.getAttribute('data-max'));
-                if (pMin === parseInt(tempMin.value) && pMax === parseInt(tempMax.value)) {
-                    cb.checked = true;
-                } else {
-                    cb.checked = false;
-                }
-            });
-        };
-
-        tempMin.addEventListener('input', () => {
-            // если пользователь двигает слайдер, сбрасываем пресеты
-            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
-            updateSlider();
-            this.applyTemperatureFilter();
-        });
-        tempMax.addEventListener('input', () => {
-            // If user moved right handle to current max, enable optional extension
-            if (parseInt(tempMax.value) >= parseInt(tempMax.max) && parseInt(tempMax.max) === initialMax) {
-                tempMin.max = extendedMax;
-                tempMax.max = extendedMax;
-                tempMaxInput.max = extendedMax;
-                // keep current value (was equal to initialMax)
-            }
-            // если пользователь двигает слайдер, сбрасываем пресеты
-            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
-            updateSlider();
-            this.applyTemperatureFilter();
-        });
-
-        // Preset checkbox handling
-        presetCheckboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                const pMin = parseInt(this.getAttribute('data-min'));
-                const pMax = parseInt(this.getAttribute('data-max'));
-                // When a preset is checked, add its range to currentFilters.temperature
-                if (this.checked) {
-                    // If shift/ctrl is NOT held, clear other presets (allow multi-select if user holds ctrl)
-                    if (!window.event || !window.event.ctrlKey) {
-                        presetCheckboxes.forEach(other => { if (other !== this) other.checked = false; });
-                        self.currentFilters.temperature = [];
-                    }
-                    const rangeStr = `${pMin}-${pMax}`;
-                    if (!self.currentFilters.temperature.includes(rangeStr)) {
-                        self.currentFilters.temperature.push(rangeStr);
-                    }
-                    // set slider to this preset
-                    tempMin.value = pMin;
-                    tempMax.value = pMax;
-                    updateSlider();
-                    self.applyFilters();
-                } else {
-                    // remove range
-                    const rangeStr = `${pMin}-${pMax}`;
-                    self.currentFilters.temperature = self.currentFilters.temperature.filter(r => r !== rangeStr);
-                    // if no presets remain checked, set slider to full range
-                    const anyChecked = presetCheckboxes.some(x => x.checked);
-                    if (!anyChecked) {
-                        tempMin.value = 0;
-                        tempMax.value = parseInt(tempMax.max) || 3000;
-                        updateSlider();
-                    }
-                    self.applyFilters();
-                }
-            });
-        });
-
-        tempMinInput.addEventListener('input', function() {
-            let value = parseInt(this.value);
-            if (isNaN(value)) value = 0;
-            if (value < 0) value = 0;
-            // respect extended max if available
-            const maxAllowed = parseInt(tempMin.max) || initialMax;
-            if (value > maxAllowed) value = maxAllowed;
-            if (value >= parseInt(tempMax.value)) value = parseInt(tempMax.value) - 50;
-            tempMin.value = value;
-            updateSlider();
-            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
-            catalog.applyTemperatureFilter();
-        });
-
-        tempMaxInput.addEventListener('input', function() {
-            let value = parseInt(this.value);
-            if (isNaN(value)) value = 3000;
-            if (value < 0) value = 0;
-            // respect extended max if available
-            const maxAllowed = parseInt(tempMax.max) || initialMax;
-            if (value > maxAllowed) value = maxAllowed;
-            if (value <= parseInt(tempMin.value)) value = parseInt(tempMin.value) + 50;
-            tempMax.value = value;
-            updateSlider();
-            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
-            catalog.applyTemperatureFilter();
-        });
-
-        // Initialize slider with full (base) range
-        tempMin.value = 0;
-        tempMax.value = initialMax;
-        tempMin.max = initialMax;
-        tempMax.max = initialMax;
-        tempMaxInput.max = initialMax;
-        updateSlider();
+        // Слайдер убран: фильтр температуры работает только через радиокнопки-предустановки.
+        return;
     }
 
     applyTemperatureFilter() {
-        // If we are programmatically applying a preset, skip the slider handler
-        if (this.__presetApplying) return;
-        const tempMin = parseInt(document.getElementById('tempMin').value);
-        const tempMax = parseInt(document.getElementById('tempMax').value);
-        
-        this.currentFilters.temperature = [`${tempMin}-${tempMax}`];
-        this.currentPage = 1;
-        this.applyFilters();
+        const checked = document.querySelector('input[name="tempPreset"]:checked');
+        const val = checked ? checked.value : 'preset:none';
+        this.applyPresetTemperature(val);
     }
 
     setupEventListeners() {
-        // Preset temperature radios
+        // Presет температуры: один выбор
         document.querySelectorAll('input[name="tempPreset"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 if (!e.target.checked) return;
@@ -448,7 +309,7 @@ class CatalogManager {
                     } else if (filterType === 'дляМалыхОбъектов') {
                         // For small objects filter, check if characteristic contains "да" or similar positive value
                         const val = String(product.characteristics[filterType] || '').toLowerCase();
-                        if (!val.includes('да') && !val.includes('позволяет')) {
+                        if (!val.includes('да') && !val.includes('позвол')) {
                             return false;
                         }
                     } else {
@@ -489,34 +350,21 @@ class CatalogManager {
         if (!Number.isFinite(bounds.min) || !Number.isFinite(bounds.max)) return false;
         
         return selectedRanges.some(range => {
-            if (String(range).startsWith('preset:')) {
-                switch (range) {
-                    case 'preset:to3000':
-                        // All products with max <= 3000
-                        return bounds.max <= 3000;
-                    case 'preset:to1800':
-                        // Products with max <= 1800 OR (250-2000)
-                        if (bounds.max <= 1800) return true;
-                        if (bounds.min === 250 && bounds.max === 2000) return true;
-                        return false;
-                    case 'preset:250-2000':
-                        // Only products with exactly 250-2000
-                        return bounds.min === 250 && bounds.max === 2000;
-                    case 'preset:200-1200':
-                        // Products with (200-1200) OR (300-1400)
-                        if ((bounds.min === 200 && bounds.max === 1200) || (bounds.min === 300 && bounds.max === 1400)) return true;
-                        return false;
-                    case 'preset:from0':
-                        // Products starting from 0
-                        return bounds.min === 0;
-                    default:
-                        return false;
-                }
-            } else {
-                // For manual slider ranges
-                const [min, max] = String(range).split('-').map(Number);
-                if (!Number.isFinite(min) || !Number.isFinite(max)) return true;
-                return bounds.min <= max && bounds.max >= min;
+            switch (range) {
+                case 'preset:to3000':
+                    return bounds.max <= 3000;
+                case 'preset:to1800':
+                    return bounds.max <= 1800 || (bounds.min === 250 && bounds.max === 2000);
+                case 'preset:250-2000':
+                    return bounds.min === 250 && bounds.max === 2000;
+                case 'preset:200-1200':
+                    return (bounds.min === 200 && bounds.max === 1200) || (bounds.min === 300 && bounds.max === 1400);
+                case 'preset:from0':
+                    return bounds.min === 0;
+                case 'preset:none':
+                    return true;
+                default:
+                    return false;
             }
         });
     }
@@ -546,54 +394,10 @@ class CatalogManager {
 
     applyPresetTemperature(presetToken) {
         this.__presetApplying = true;
-        try {
-            const tempMinEl = document.getElementById('tempMin');
-            const tempMaxEl = document.getElementById('tempMax');
-            switch (presetToken) {
-                case 'preset:to3000':
-                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
-                case 'preset:to1800':
-                    tempMinEl.value = 0; tempMaxEl.value = 1800; break;
-                case 'preset:250-2000':
-                    tempMinEl.value = 250; tempMaxEl.value = 2000; break;
-                case 'preset:200-1200':
-                    tempMinEl.value = 200; tempMaxEl.value = 1200; break;
-                case 'preset:from0':
-                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
-                default:
-                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
-            }
-            try { tempMinEl.dispatchEvent(new Event('input')); tempMaxEl.dispatchEvent(new Event('input')); } catch (e) {}
-        } finally {
-            this.__presetApplying = false;
-        }
-
-        this.currentFilters.temperature = [presetToken];
+        try {} finally { this.__presetApplying = false; }
+        this.currentFilters.temperature = (presetToken && presetToken !== 'preset:none') ? [presetToken] : [];
         this.currentPage = 1;
         this.applyFilters();
-    }
-
-    // Try to extract numeric temperature bounds even if only a string range is present
-    getTemperatureBounds(product) {
-        const ch = product.characteristics || {};
-        let pMin = Number(ch.температураМин);
-        let pMax = Number(ch.температураМакс);
-
-        // Fallback: parse from text range like "200-1200°С" or "0 ... 3000"
-        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
-            const rangeStr = ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['диапазон'] || '';
-            const nums = String(rangeStr).match(/-?\d+/g);
-            if (nums && nums.length >= 2) {
-                pMin = Number(nums[0]);
-                pMax = Number(nums[1]);
-            }
-        }
-
-        // If still invalid, mark as not filterable
-        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
-            return { min: NaN, max: NaN };
-        }
-        return { min: pMin, max: pMax };
     }
 
     sortProducts(products) {
@@ -624,11 +428,12 @@ class CatalogManager {
             checkbox.checked = false;
         });
 
-        document.getElementById('tempMin').value = 0;
-        document.getElementById('tempMax').value = 3000;
-        this.initTemperatureSlider();
         // Сброс пресетов радио
-        try { document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false); } catch (e) {}
+        try {
+            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
+            const noneRadio = document.querySelector('input[name="tempPreset"][value="preset:none"]');
+            if (noneRadio) noneRadio.checked = true;
+        } catch (e) {}
 
         document.getElementById('searchInput').value = '';
         document.getElementById('sortSelect').value = 'popular';
@@ -645,7 +450,8 @@ class CatalogManager {
             точность: [],
             устройствоВизирования: [],
             госреестр: [],
-            дляМалыхОбъектов: []
+            дляМалыхОбъектов: [],
+            особенности: []
         };
         this.searchQuery = '';
         this.sortBy = 'popular';
@@ -979,7 +785,7 @@ class CatalogManager {
         // Для popup используем полное описание, не обрезаем
         let exec = Array.isArray(characteristics.исполнение) ? characteristics.исполнение.join(', ') : (characteristics.исполнение || 'Не указано');
         let materials = Array.isArray(characteristics['Измеряемые материалы и среды']) ? characteristics['Измеряемые материалы и среды'].join(', ') : (characteristics['Измеряемые материалы и среды'] || 'Не указаны');
-        let features = Array.isArray(characteristics['Особенности применения']) ? characteristics['Особенности применения'].join(', ') : (characteristics['Особенности применения'] || 'Не указаны');
+        let features = Array.isArray(characteristics.особенности) ? characteristics.особенности.join(', ') : (characteristics.особенности || 'Не указаны');
         // Gallery: main image + thumbnails
         let mainImageHtml = '';
         let thumbsHtml = '';
@@ -1001,6 +807,12 @@ class CatalogManager {
         const fullDesc = escapeHtml(fullDescRaw);
         const shortDescRaw = shortDesc || '';
         const shortDescEsc = escapeHtml(shortDescRaw);
+        const isYes = (val) => {
+            const v = String(val || '').toLowerCase();
+            return v.includes('да') || v.includes('внес') || v.includes('позвол');
+        };
+        const registryYes = isYes(characteristics.госреестр);
+        const smallYes = isYes(characteristics.дляМалыхОбъектов);
         return `
             <div class="popup__content">
                 <div class="popup__gallery">
@@ -1056,10 +868,6 @@ class CatalogManager {
                             <span>${materials}</span>
                         </div>
                         <div class="popup__spec">
-                            <strong>Особенности применения:</strong>
-                            <span>${features}</span>
-                        </div>
-                        <div class="popup__spec">
                             <strong>Исполнение:</strong>
                             <span>${exec}</span>
                         </div>
@@ -1073,12 +881,16 @@ class CatalogManager {
                         </div>
                         <div class="popup__spec">
                             <strong>Госреестр:</strong>
-                            <span>${characteristics.госреестр === 'да' ? 'Внесен' : 'Не внесен'}</span>
+                            <span>${registryYes ? 'Внесен' : 'Не внесен'}</span>
                         </div>
-                        ${characteristics.дляМалыхОбъектов ? `
                         <div class="popup__spec">
                             <strong>Для малых объектов:</strong>
-                            <span>${characteristics.дляМалыхОбъектов === 'да' ? 'Да' : 'Нет'}</span>
+                            <span>${smallYes ? 'Да' : 'Нет'}</span>
+                        </div>
+                        ${features && features !== 'Не указаны' ? `
+                        <div class="popup__spec">
+                            <strong>Особенности применения:</strong>
+                            <span>${features}</span>
                         </div>
                         ` : ''}
                     </div>
@@ -1291,6 +1103,69 @@ class CatalogManager {
             thumbnails.forEach(t => t.classList.remove('active'));
             thumbnails[0].classList.add('active');
         }
+
+        // Fullscreen lightbox on click with переключением
+        const sources = thumbnails.map(t => t.getAttribute('data-src')).filter(Boolean);
+        if (!sources.length && mainImg && mainImg.src) {
+            sources.push(mainImg.src);
+        }
+        const openLightbox = (startIndex = 0) => {
+            let idx = startIndex;
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position:fixed;top:0;left:0;width:100%;height:100%;
+                background:rgba(0,0,0,0.9);z-index:9999;display:flex;
+                align-items:center;justify-content:center;padding:16px;box-sizing:border-box;
+            `;
+            const img = document.createElement('img');
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '100%';
+            img.style.objectFit = 'contain';
+            img.style.boxShadow = '0 0 20px rgba(0,0,0,0.4)';
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '×';
+            closeBtn.style.cssText = 'position:absolute;top:16px;right:20px;font-size:28px;color:#fff;background:none;border:none;cursor:pointer;';
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '‹';
+            prevBtn.style.cssText = 'position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:32px;color:#fff;background:none;border:none;cursor:pointer;';
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = '›';
+            nextBtn.style.cssText = 'position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:32px;color:#fff;background:none;border:none;cursor:pointer;';
+
+            const show = () => { img.src = sources[idx]; };
+            const close = () => overlay.remove();
+            const prev = () => { idx = (idx - 1 + sources.length) % sources.length; show(); };
+            const next = () => { idx = (idx + 1) % sources.length; show(); };
+
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+            closeBtn.addEventListener('click', close);
+            prevBtn.addEventListener('click', prev);
+            nextBtn.addEventListener('click', next);
+            document.addEventListener('keydown', function handler(ev){
+                if (!document.body.contains(overlay)) { document.removeEventListener('keydown', handler); return; }
+                if (ev.key === 'Escape') close();
+                if (ev.key === 'ArrowLeft') prev();
+                if (ev.key === 'ArrowRight') next();
+            });
+
+            overlay.appendChild(img);
+            if (sources.length > 1) {
+                overlay.appendChild(prevBtn);
+                overlay.appendChild(nextBtn);
+            }
+            overlay.appendChild(closeBtn);
+            document.body.appendChild(overlay);
+            show();
+        };
+
+        if (sources.length) {
+            mainImg.style.cursor = 'zoom-in';
+            mainImg.addEventListener('click', () => openLightbox(thumbnails.findIndex(t => t.classList.contains('active')) || 0));
+        }
+
+        thumbnails.forEach((thumb, idx) => {
+            thumb.addEventListener('dblclick', () => openLightbox(idx));
+        });
     }
 }
 
@@ -1347,9 +1222,8 @@ let catalog;
 
 document.addEventListener('DOMContentLoaded', function() {
     catalog = new CatalogManager();
-    // Инициализация обработчиков и слайдера
+    // Инициализация обработчиков
     if (catalog.setupEventListeners) catalog.setupEventListeners();
-    if (catalog.initTemperatureSlider) catalog.initTemperatureSlider();
     // Sync initial sort with UI (so displayed sort matches internal state)
     try {
         const sortEl = document.getElementById('sortSelect');
