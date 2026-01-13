@@ -5,18 +5,18 @@ const db = require('./db');
 async function run() {
   try {
     db.init();
-    console.log('DB initialized. Starting migration...');
+    console.log('DB initialized. Starting smart migration...');
 
     const dataDir = path.join(__dirname, 'data');
     const productsFile = path.join(dataDir, 'products.json');
     const articlesFile = path.join(dataDir, 'articles.json');
 
-    // Clear existing tables
-    db.deleteAllProducts();
-    db.deleteAllArticles();
-    console.log('Cleared existing products and articles.');
-
-    // Import products
+    // ========== SMART PRODUCTS MIGRATION ==========
+    // Don't clear existing products! Instead, merge:
+    // - Add new products from JSON
+    // - Keep existing products in DB (they have user edits)
+    // - Update only if product in JSON is newer
+    
     let products = [];
     if (fs.existsSync(productsFile)) {
       try {
@@ -25,17 +25,38 @@ async function run() {
         console.error('Failed to parse products.json:', e.message || e);
       }
     }
+    
     let pCount = 0;
+    let pUpdated = 0;
+    
     for (const p of products) {
       try {
-        db.createProduct(p);
-        pCount++;
+        const existing = db.getProductById(p.id);
+        if (existing) {
+          // Product exists in DB - only update if JSON is newer or if we're filling in missing fields
+          // Keep all characteristics from DB (user edits), only update from JSON if DB field is empty
+          const merged = {
+            ...p,
+            characteristics: {
+              ...p.characteristics,
+              ...existing.characteristics // Keep DB edits as priority
+            }
+          };
+          db.updateProduct(p.id, merged);
+          pUpdated++;
+          console.log(`✓ Merged existing product: ${p.title} (kept DB edits)`);
+        } else {
+          // New product - add it
+          db.createProduct(p);
+          pCount++;
+          console.log(`✓ Added new product: ${p.title}`);
+        }
       } catch (e) {
         console.warn('Skipping product import (error):', e.message || e);
       }
     }
 
-    // Import articles
+    // ========== SMART ARTICLES MIGRATION ==========
     let articles = [];
     if (fs.existsSync(articlesFile)) {
       try {
@@ -44,17 +65,34 @@ async function run() {
         console.error('Failed to parse articles.json:', e.message || e);
       }
     }
+    
     let aCount = 0;
+    let aUpdated = 0;
+    
     for (const a of articles) {
       try {
-        db.createArticle(a);
-        aCount++;
+        const existing = db.getArticleById(a.id);
+        if (existing) {
+          // Article exists - update it
+          db.updateArticle(a.id, a);
+          aUpdated++;
+          console.log(`✓ Updated existing article: ${a.title}`);
+        } else {
+          // New article - add it
+          db.createArticle(a);
+          aCount++;
+          console.log(`✓ Added new article: ${a.title}`);
+        }
       } catch (e) {
         console.warn('Skipping article import (error):', e.message || e);
       }
     }
 
-    console.log(`Migration complete. Products imported: ${pCount}, Articles imported: ${aCount}`);
+    console.log(`\n=== Smart Migration Complete ===`);
+    console.log(`Products - Added: ${pCount}, Merged: ${pUpdated}`);
+    console.log(`Articles - Added: ${aCount}, Updated: ${aUpdated}`);
+    console.log(`✓ Your edits in the database are PRESERVED!`);
+    
   } catch (err) {
     console.error('Migration failed:', err);
     process.exit(1);

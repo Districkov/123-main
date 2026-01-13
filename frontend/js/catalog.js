@@ -303,7 +303,8 @@ class CatalogManager {
                         });
                         if (!matchesViz) return false;
                     } else if (filterType === 'госреестр') {
-                        if (product.characteristics[filterType] !== 'да') {
+                        const prodValue = String(product.characteristics[filterType] || '').toLowerCase();
+                        if (!selectedValues.some(sel => prodValue.includes(String(sel).toLowerCase()))) {
                             return false;
                         }
                     } else if (filterType === 'дляМалыхОбъектов') {
@@ -349,20 +350,41 @@ class CatalogManager {
         const bounds = this.getTemperatureBounds(product);
         if (!Number.isFinite(bounds.min) || !Number.isFinite(bounds.max)) return false;
         
+        // Helper: проверяет что ОБОЗНАЧЕНИЯ границы товара находятся ВНУТРИ диапазона фильтра
+        const isWithinRange = (productMin, productMax, filterMin, filterMax) => {
+            return filterMin <= productMin && productMax <= filterMax;
+        };
+        
         return selectedRanges.some(range => {
             switch (range) {
                 case 'preset:to3000':
+                    // до 3000 °С - товары ПОЛНОСТЬЮ вмещаются до 3000
+                    // т.е. 600-1800 ✅, но 1800-3000 ❌
                     return bounds.max <= 3000;
+                    
                 case 'preset:to1800':
-                    return bounds.max <= 1800 || (bounds.min === 250 && bounds.max === 2000);
+                    // до 1800 °С - товары ПОЛНОСТЬЮ вмещаются до 1800
+                    // т.е. 600-1800 ✅, но 1800-2000 ❌
+                    return bounds.max <= 1800;
+                    
                 case 'preset:250-2000':
-                    return bounds.min === 250 && bounds.max === 2000;
+                    // 250-2000 - товары ПОЛНОСТЬЮ попадают в этот диапазон
+                    // т.е. 600-1800 ✅, но 200-1800 ❌, и 1800-3000 ❌
+                    return isWithinRange(bounds.min, bounds.max, 250, 2000);
+                    
                 case 'preset:200-1200':
-                    return (bounds.min === 200 && bounds.max === 1200) || (bounds.min === 300 && bounds.max === 1400);
+                    // 200-1200 - товары ПОЛНОСТЬЮ попадают в этот диапазон
+                    // ИЛИ товары ПОЛНОСТЬЮ попадают в 300-1400 (связанный диапазон)
+                    return isWithinRange(bounds.min, bounds.max, 200, 1200) || 
+                           isWithinRange(bounds.min, bounds.max, 300, 1400);
+                    
                 case 'preset:from0':
+                    // от 0 °С - товары которые начинаются с 0
                     return bounds.min === 0;
+                    
                 case 'preset:none':
                     return true;
+                    
                 default:
                     return false;
             }
@@ -746,20 +768,8 @@ class CatalogManager {
                 descNode.style.display = descNode.style.display || '';
             }
         } catch (err) { console.error('openProductPopup diagnostic error', err); }
-        // For debugging: force-show full description by default so it's visible
-        try {
-            const descNodeForce = popupBody.querySelector('.popup__description');
-            if (descNodeForce) {
-                const shortSpanF = descNodeForce.querySelector('.short-desc');
-                const fullSpanF = descNodeForce.querySelector('.full-desc');
-                const btnF = descNodeForce.querySelector('button.btn--link');
-                // Already set in createPopupContent, but ensure it persists
-                if (fullSpanF) fullSpanF.style.display = 'block';
-                if (shortSpanF) shortSpanF.style.display = 'none';
-                if (btnF) { btnF.textContent = 'Свернуть описание'; btnF.setAttribute('aria-expanded', 'true'); }
-                descNodeForce.classList.add('expanded');
-            }
-        } catch (err) { console.error('force-show description error', err); }
+        // Описание по умолчанию показывает краткую версию (short-desc), 
+        // полная версия скрывается и показывается при клике на кнопку "Развернуть описание"
 
         document.getElementById('productPopup').classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -779,10 +789,20 @@ class CatalogManager {
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         };
         const characteristics = product.characteristics || {};
-        // В popup показываем полное описание
+        // Для краткого описания показываем первые 3-4 строки
         let shortDesc = product.description || '';
-        if (!shortDesc) shortDesc = 'Описание отсутствует';
-        // Для popup используем полное описание, не обрезаем
+        if (shortDesc) {
+            // Разбиваем на строки и берем первые 3-4
+            const lines = shortDesc.split('\n').filter(l => l.trim());
+            shortDesc = lines.slice(0, 3).join('\n');
+            // Если осталось очень много текста в одной строке, обрезаем до ~300 символов
+            if (shortDesc.length > 300) {
+                shortDesc = shortDesc.substring(0, 300) + '...';
+            }
+        } else {
+            shortDesc = 'Описание отсутствует';
+        }
+        // Для полного описания показываем весь текст
         let exec = Array.isArray(characteristics.исполнение) ? characteristics.исполнение.join(', ') : (characteristics.исполнение || 'Не указано');
         let materials = Array.isArray(characteristics['Измеряемые материалы и среды']) ? characteristics['Измеряемые материалы и среды'].join(', ') : (characteristics['Измеряемые материалы и среды'] || 'Не указаны');
         let features = Array.isArray(characteristics.особенности) ? characteristics.особенности.join(', ') : (characteristics.особенности || 'Не указаны');
@@ -802,14 +822,13 @@ class CatalogManager {
             thumbsHtml = '';
         }
         let sku = Array.isArray(product.sku) ? product.sku.join(', ') : (product.sku || 'Не указан');
-        // include both short and full description (full hidden) so toggle works reliably
+        // Экранируем описание для безопасности
+        const shortDescEsc = escapeHtml(shortDesc);
         const fullDescRaw = product.description && product.description.trim() ? product.description : 'Описание отсутствует';
-        const fullDesc = escapeHtml(fullDescRaw);
-        const shortDescRaw = shortDesc || '';
-        const shortDescEsc = escapeHtml(shortDescRaw);
+        const fullDescEsc = escapeHtml(fullDescRaw);
         const isYes = (val) => {
             const v = String(val || '').toLowerCase();
-            return v.includes('да') || v.includes('внес') || v.includes('позвол');
+            return v.includes('да') || v.includes('внес') || v.includes('позвол') || v === 'да';
         };
         const registryYes = isYes(characteristics.госреестр);
         const smallYes = isYes(characteristics.дляМалыхОбъектов);
@@ -834,9 +853,9 @@ class CatalogManager {
                     <h1>${product.title || 'Без названия'}</h1>
                     <div class="popup__price">${this.formatPrice(product.price)} ₽</div>
                     <p class="popup__description">
-                        <span class="short-desc" style="display:none">${shortDescEsc}</span>
-                        <span class="full-desc" style="display:block">${fullDesc}</span>
-                        <button class="btn btn--link" onclick="catalog.showFullDescription('${product.id}')" aria-expanded="true">Свернуть описание</button>
+                        <span class="short-desc" style="display:block">${shortDescEsc}</span>
+                        <span class="full-desc" style="display:none">${fullDescEsc}</span>
+                        <button class="btn btn--link" onclick="catalog.showFullDescription('${product.id}')" aria-expanded="false">Развернуть описание</button>
                     </p>
                     <div class="popup__specs">
                         <div class="popup__spec">
@@ -957,13 +976,19 @@ class CatalogManager {
                 // collapse
                 if (fullSpan) fullSpan.style.display = 'none';
                 if (shortSpan) shortSpan.style.display = 'block';
-                if (btn) btn.textContent = 'Развернуть описание';
+                if (btn) {
+                    btn.textContent = 'Развернуть описание';
+                    btn.setAttribute('aria-expanded', 'false');
+                }
                 desc.classList.remove('expanded');
             } else {
                 // expand
                 if (fullSpan) fullSpan.style.display = 'block';
                 if (shortSpan) shortSpan.style.display = 'none';
-                if (btn) btn.textContent = 'Свернуть описание';
+                if (btn) {
+                    btn.textContent = 'Свернуть описание';
+                    btn.setAttribute('aria-expanded', 'true');
+                }
                 desc.classList.add('expanded');
                 // Scroll popup content slightly to keep the button visible on expand
                 const body = document.querySelector('.product-popup__body');
