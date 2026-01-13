@@ -1687,7 +1687,8 @@ label.filter-radio input[type="radio"]:checked + span {
     flex-grow: 1;
     word-wrap: break-word;
     overflow-wrap: break-word;
-    white-space: pre-wrap;
+    white-space: normal;
+    display: block;
 }
 
 .product-card__description-toggle {
@@ -3307,15 +3308,34 @@ select:focus {
     line-height: 1.7;
     margin-bottom: 25px;
     font-size: 16px;
-}
-.popup__description {
-    max-height: 84px;
+    max-height: 300px;
     overflow: hidden;
     position: relative;
     transition: max-height 0.25s ease;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
 }
+
+.popup__description .short-desc {
+    display: block !important;
+    visibility: visible !important;
+}
+
+.popup__description .full-desc {
+    display: none !important;
+}
+
 .popup__description.expanded {
-    max-height: 2000px; /* large enough to show full text */
+    max-height: 3000px; /* large enough to show full text */
+}
+
+.popup__description.expanded .short-desc {
+    display: none !important;
+}
+
+.popup__description.expanded .full-desc {
+    display: block !important;
 }
 
 /* Button style for description toggle */
