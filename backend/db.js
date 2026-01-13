@@ -11,10 +11,11 @@ if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 const db = new Database(dbFile);
 
 function init() {
-  // products table
+  // products table with separate columns for each characteristic and SEO
   db.prepare(`
     CREATE TABLE IF NOT EXISTS products (
-      id TEXT PRIMARY KEY,
+      rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+      id TEXT UNIQUE,
       sku TEXT,
       category TEXT,
       title TEXT,
@@ -22,8 +23,24 @@ function init() {
       price REAL,
       quantity INTEGER,
       description TEXT,
-      characteristics TEXT,
-      seo TEXT,
+      "диапазон" TEXT,
+      "погрешность" TEXT,
+      "визирование" TEXT,
+      "принцип_действия" TEXT,
+      "спектральный_диапазон" TEXT,
+      "материалы" TEXT,
+      "исполнение" TEXT,
+      "быстродействие" TEXT,
+      "точность" TEXT,
+      "устройство_визирования" TEXT,
+      "госреестр" TEXT,
+      "для_малых_объектов" TEXT,
+      "особенности" TEXT,
+      "температура_мин" INTEGER,
+      "температура_макс" INTEGER,
+      seo_title TEXT,
+      seo_description TEXT,
+      seo_keywords TEXT,
       createdAt TEXT,
       updatedAt TEXT
     )
@@ -64,10 +81,40 @@ function getProductById(id) {
 }
 
 function createProduct(p) {
-  const id = String(p.id || Date.now().toString());
   const now = new Date().toISOString();
-  const stmt = db.prepare(`INSERT INTO products (id, sku, category, title, photos, price, quantity, description, characteristics, seo, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-  stmt.run(id, JSON.stringify(p.sku || ''), p.category || '', p.title || '', JSON.stringify(p.photos || []), p.price || 0, p.quantity || 0, p.description || '', JSON.stringify(p.characteristics || {}), JSON.stringify(p.seo || {}), now);
+  const ch = p.characteristics || {};
+  const seo = p.seo || {};
+  const stmt = db.prepare(`INSERT INTO products (id, sku, category, title, photos, price, quantity, description, "диапазон", "погрешность", "визирование", "принцип_действия", "спектральный_диапазон", "материалы", "исполнение", "быстродействие", "точность", "устройство_визирования", "госреестр", "для_малых_объектов", "особенности", "температура_мин", "температура_макс", seo_title, seo_description, seo_keywords, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const id = String(p.id || Date.now().toString());
+  stmt.run(
+    id,
+    JSON.stringify(p.sku || ''),
+    p.category || '',
+    p.title || '',
+    JSON.stringify(p.photos || []),
+    p.price || 0,
+    p.quantity || 0,
+    p.description || '',
+    ch['диапазон'] || ch['Диапазон измерений температуры'] || '',
+    ch['погрешность'] || ch['Погрешность'] || '',
+    ch['визирование'] || ch['Показатель визирования'] || '',
+    ch['принцип_действия'] || ch['Принцип действия'] || '',
+    ch['спектральный_диапазон'] || ch['Спектральный диапазон'] || '',
+    JSON.stringify(ch['материалы'] || ch['Измеряемые материалы и среды'] || []),
+    JSON.stringify(ch['исполнение'] || ch['Исполнение'] || []),
+    ch['быстродействие'] || ch['Быстродействие'] || '',
+    ch['точность'] || ch['Точность'] || '',
+    ch['устройство_визирования'] || ch['Устройство визирования'] || '',
+    ch['госреестр'] || ch['Госреестр'] || '',
+    ch['для_малых_объектов'] || ch['Для малых объектов'] || '',
+    JSON.stringify(ch['особенности'] || ch['Особенности применения'] || []),
+    parseInt(ch['температура_мин']) || parseInt(ch['Температура мин']) || 0,
+    parseInt(ch['температура_макс']) || parseInt(ch['Температура макс']) || 0,
+    seo.title || seo['seo_title'] || p.title || '',
+    seo.description || seo['seo_description'] || p.description || '',
+    seo.keywords || seo['seo_keywords'] || '',
+    now
+  );
   const created = getProductById(id);
   persistProductsToJson();
   return created;
@@ -81,8 +128,38 @@ function updateProduct(id, p) {
     ...existing,
     ...p
   };
-  const stmt = db.prepare(`UPDATE products SET sku = ?, category = ?, title = ?, photos = ?, price = ?, quantity = ?, description = ?, characteristics = ?, seo = ?, updatedAt = ? WHERE id = ?`);
-  stmt.run(JSON.stringify(merged.sku || ''), merged.category || '', merged.title || '', JSON.stringify(merged.photos || []), merged.price || 0, merged.quantity || 0, merged.description || '', JSON.stringify(merged.characteristics || {}), JSON.stringify(merged.seo || {}), now, id);
+  const ch = merged.characteristics || {};
+  const seo = merged.seo || {};
+  const stmt = db.prepare(`UPDATE products SET sku = ?, category = ?, title = ?, photos = ?, price = ?, quantity = ?, description = ?, "диапазон" = ?, "погрешность" = ?, "визирование" = ?, "принцип_действия" = ?, "спектральный_диапазон" = ?, "материалы" = ?, "исполнение" = ?, "быстродействие" = ?, "точность" = ?, "устройство_визирования" = ?, "госреестр" = ?, "для_малых_объектов" = ?, "особенности" = ?, "температура_мин" = ?, "температура_макс" = ?, seo_title = ?, seo_description = ?, seo_keywords = ?, updatedAt = ? WHERE id = ?`);
+  stmt.run(
+    JSON.stringify(merged.sku || ''),
+    merged.category || '',
+    merged.title || '',
+    JSON.stringify(merged.photos || []),
+    merged.price || 0,
+    merged.quantity || 0,
+    merged.description || '',
+    ch['диапазон'] || ch['Диапазон измерений температуры'] || '',
+    ch['погрешность'] || ch['Погрешность'] || '',
+    ch['визирование'] || ch['Показатель визирования'] || '',
+    ch['принцип_действия'] || ch['Принцип действия'] || '',
+    ch['спектральный_диапазон'] || ch['Спектральный диапазон'] || '',
+    JSON.stringify(ch['материалы'] || ch['Измеряемые материалы и среды'] || []),
+    JSON.stringify(ch['исполнение'] || ch['Исполнение'] || []),
+    ch['быстродействие'] || ch['Быстродействие'] || '',
+    ch['точность'] || ch['Точность'] || '',
+    ch['устройство_визирования'] || ch['Устройство визирования'] || '',
+    ch['госреестр'] || ch['Госреестр'] || '',
+    ch['для_малых_объектов'] || ch['Для малых объектов'] || '',
+    JSON.stringify(ch['особенности'] || ch['Особенности применения'] || []),
+    parseInt(ch['температура_мин']) || parseInt(ch['Температура мин']) || 0,
+    parseInt(ch['температура_макс']) || parseInt(ch['Температура макс']) || 0,
+    seo.title || seo['seo_title'] || merged.title || '',
+    seo.description || seo['seo_description'] || merged.description || '',
+    seo.keywords || seo['seo_keywords'] || '',
+    now,
+    id
+  );
   const updated = getProductById(id);
   persistProductsToJson();
   return updated;
@@ -161,8 +238,28 @@ function normalizeProductRow(row) {
     price: row.price,
     quantity: row.quantity,
     description: row.description,
-    characteristics: normalizeCharacteristics(tryParseJSON(row.characteristics) || {}),
-    seo: tryParseJSON(row.seo) || {},
+    characteristics: {
+      диапазон: row.диапазон || '',
+      погрешность: row.погрешность || '',
+      визирование: row.визирование || '',
+      принцип_действия: row.принцип_действия || '',
+      спектральный_диапазон: row.спектральный_диапазон || '',
+      материалы: tryParseJSON(row.материалы) || [],
+      исполнение: tryParseJSON(row.исполнение) || [],
+      быстродействие: row.быстродействие || '',
+      точность: row.точность || '',
+      устройство_визирования: row.устройство_визирования || '',
+      госреестр: row.госреестр || '',
+      для_малых_объектов: row.для_малых_объектов || '',
+      особенности: tryParseJSON(row.особенности) || [],
+      температура_мин: row.температура_мин || 0,
+      температура_макс: row.температура_макс || 0
+    },
+    seo: {
+      title: row.seo_title || '',
+      description: row.seo_description || '',
+      keywords: row.seo_keywords || ''
+    },
     createdAt: row.createdAt,
     updatedAt: row.updatedAt
   };
