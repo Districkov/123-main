@@ -56,42 +56,25 @@ router.post('/products', (req, res) => {
 });
 
 router.put('/products/:id', (req, res) => {
-  const items = readJson(productsFile);
-  const id = String(req.params.id);
-  const idx = items.findIndex(i => String(i.id) === id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  // Преобразуем некоторые поля к массиву, если они не пустые строки
-  const body = { ...req.body };
-  if (body.characteristics) {
-    if (Array.isArray(body.characteristics['Исполнение'])) {
-      // ok
-    } else if (typeof body.characteristics['Исполнение'] === 'string' && body.characteristics['Исполнение']) {
-      body.characteristics['Исполнение'] = [body.characteristics['Исполнение']];
-    }
-    if (Array.isArray(body.characteristics['Измеряемые материалы и среды'])) {
-      // ok
-    } else if (typeof body.characteristics['Измеряемые материалы и среды'] === 'string' && body.characteristics['Измеряемые материалы и среды']) {
-      body.characteristics['Измеряемые материалы и среды'] = [body.characteristics['Измеряемые материалы и среды']];
-    }
-    if (Array.isArray(body.characteristics['Особенности применения'])) {
-      // ok
-    } else if (typeof body.characteristics['Особенности применения'] === 'string' && body.characteristics['Особенности применения']) {
-      body.characteristics['Особенности применения'] = [body.characteristics['Особенности применения']];
-    }
+  try {
+    const updated = db.updateProduct(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Product not found' });
+    res.json(updated);
+  } catch (e) {
+    console.error('admin PUT product error:', e);
+    res.status(500).json({ error: 'Failed to update product' });
   }
-  items[idx] = Object.assign({}, items[idx], body, { id: items[idx].id });
-  writeJson(productsFile, items);
-  res.json(items[idx]);
 });
 
 router.delete('/products/:id', (req, res) => {
-  let items = readJson(productsFile);
-  const id = String(req.params.id);
-  const idx = items.findIndex(i => String(i.id) === id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  const removed = items.splice(idx,1)[0];
-  writeJson(productsFile, items);
-  res.json({ deleted: removed });
+  try {
+    const deleted = db.deleteProduct(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Product not found' });
+    res.json({ message: 'Product deleted successfully', product: deleted });
+  } catch (e) {
+    console.error('admin DELETE product error:', e);
+    res.status(500).json({ error: 'Failed to delete product' });
+  }
 });
 
 // Articles CRUD (similar)

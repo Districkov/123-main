@@ -362,40 +362,40 @@ function openProductPopup(product = null) {
     updatePhotoPreview(form);
     form.price.value = product.price || '';
     form.quantity.value = product.quantity || 1;
-    // Характеристики
-    form.characteristics_visibility.value = product.characteristics?.['Показатель визирования'] || '';
-    form.characteristics_temperature_range.value = product.characteristics?.['Диапазон измерений температуры'] || '';
+    // Характеристики - используем как новые так и старые названия
+    const ch = product.characteristics || {};
+    form.characteristics_visibility.value = ch.визирование || ch['Показатель визирования'] || '';
+    form.characteristics_temperature_range.value = ch.диапазон || ch['Диапазон измерений температуры'] || '';
     // Погрешность (селект)
-    if (form.characteristics_error) form.characteristics_error.value = product.characteristics?.['Погрешность'] || '';
+    if (form.characteristics_error) form.characteristics_error.value = ch.погрешность || ch['Погрешность'] || '';
     // Спектральный диапазон
-    if (form.characteristics_spectral) form.characteristics_spectral.value = product.characteristics?.['Спектральный диапазон'] || '';
+    if (form.characteristics_spectral) form.characteristics_spectral.value = ch.спектральный_диапазон || ch['Спектральный диапазон'] || '';
     // Быстродействие (селект)
-    if (form.characteristics_speed) form.characteristics_speed.value = product.characteristics?.['Быстродействие'] || '';
+    if (form.characteristics_speed) form.characteristics_speed.value = ch.быстродействие || ch['Быстродействие'] || '';
     // Исполнение (множественный выбор)
     if (form.characteristics_design) {
-      // now single-select: pick first value if array, otherwise take string
-      const raw = product.characteristics?.['Исполнение'];
+      const raw = ch.исполнение || ch['Исполнение'];
       if (Array.isArray(raw)) form.characteristics_design.value = raw[0] || '';
       else form.characteristics_design.value = raw || '';
     }
     // Устройство визирования (селект)
-    if (form.characteristics_sight) form.characteristics_sight.value = product.characteristics?.['Устройство визирования'] || '';
+    if (form.characteristics_sight) form.characteristics_sight.value = ch.устройство_визирования || ch['Устройство визирования'] || '';
     // Внесен в Госреестр (селект)
-    if (form.characteristics_registry) form.characteristics_registry.value = product.characteristics?.['Госреестр'] || '';
+    if (form.characteristics_registry) form.characteristics_registry.value = ch.госреестр || ch['Госреестр'] || '';
     // Для малоразмерных объектов (селект)
-    if (form.characteristics_small_objects) form.characteristics_small_objects.value = product.characteristics?.['Малоразмерные объекты'] || '';
+    if (form.characteristics_small_objects) form.characteristics_small_objects.value = ch.для_малых_объектов || ch['Малоразмерные объекты'] || '';
     // Принцип действия (селект)
-    if (form.characteristics_principle) form.characteristics_principle.value = product.characteristics?.['Принцип действия'] || '';
+    if (form.characteristics_principle) form.characteristics_principle.value = ch.принцип_действия || ch['Принцип действия'] || '';
     // Материалы (множественный выбор)
     if (form.characteristics_materials) {
-      setMultiSelectValues(form.characteristics_materials, product.characteristics?.['Измеряемые материалы и среды']);
+      setMultiSelectValues(form.characteristics_materials, ch.материалы || ch['Измеряемые материалы и среды']);
     }
     // Особенности применения (множественный выбор)
     if (form.characteristics_features) {
-      setMultiSelectValues(form.characteristics_features, product.characteristics?.['Особенности применения']);
+      setMultiSelectValues(form.characteristics_features, ch.особенности || ch['Особенности применения']);
     }
-    form.characteristics_temperature_min.value = product.characteristics?.['Температура мин'] || '';
-    form.characteristics_temperature_max.value = product.characteristics?.['Температура макс'] || '';
+    form.characteristics_temperature_min.value = ch.температура_мин || ch['Температура мин'] || '';
+    form.characteristics_temperature_max.value = ch.температура_макс || ch['Температура макс'] || '';
     // Описание
     if (form.description) form.description.value = product.description || '';
     // SEO

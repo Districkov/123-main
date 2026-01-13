@@ -50,13 +50,6 @@ class CatalogManager {
 
     normalizeProduct(rawProduct) {
         const ch = rawProduct.characteristics || {};
-        const normalizeYesNo = (v) => {
-            const s = String(v || '').toLowerCase();
-            if (!s) return '';
-            if (s.includes('да') || s.includes('внес') || s.includes('yes') || s.includes('позвол')) return 'да';
-            if (s.includes('нет') || s.includes('не ')) return 'нет';
-            return s;
-        };
         const parsePogreshnost = (v) => {
             const num = parseFloat(String(v).replace(',', '.'));
             if (!Number.isFinite(num)) return null;
@@ -76,10 +69,6 @@ class CatalogManager {
         };
         const photos = rawProduct.photos && rawProduct.photos.length ? rawProduct.photos : (rawProduct.photo ? [rawProduct.photo] : []);
         const sku = rawProduct.sku;
-        const materialsArr = getArr(ch['Измеряемые материалы и среды'] || ch['Измеряемые материалы'] || ch['материалы']);
-        const featuresArr = getArr(ch['Особенности применения'] || ch['особенности применения']);
-        const execArr = getArr(ch['Исполнение'] || ch['исполнение']);
-
         return {
             id: rawProduct.id || (rawProduct._id || Date.now().toString()),
             sku: Array.isArray(sku) ? sku : (sku ? String(sku) : ''),
@@ -95,14 +84,13 @@ class CatalogManager {
                 визирование: ch['Показатель визирования'] || ch['Показатель визирования (второе)'] || ch['показатель визирования'] || '',
                 принципДействия: ch['Принцип действия'] || ch['принцип действия'] || '',
                 спектральныйДиапазон: ch['Спектральный диапазон'] || ch['спектральный диапазон'] || '',
-                'Измеряемые материалы и среды': materialsArr,
-                исполнение: execArr,
+                'Измеряемые материалы и среды': ch['Измеряемые материалы и среды'] || ch['Измеряемые материалы'] || ch['материалы'] || getArr(ch['Измеряемые материалы']) ,
+                исполнение: ch['Исполнение'] || ch['исполнение'] || getArr(ch['Исполнение']),
                 быстродействие: ch['Быстродействие'] || ch['быстродействие'] || '',
                 точность: accuracyLabel || ch['Точность'] || ch['точность'] || '',
                 устройствоВизирования: ch['Устройство визирования'] || ch['устройство визирования'] || '',
-                госреестр: normalizeYesNo(ch['Госреестр'] || ch['госреестр']),
-                дляМалыхОбъектов: normalizeYesNo(ch['Для малых объектов'] || ch['Малоразмерные объекты'] || ch['Малоразмерные объекты']),
-                особенности: featuresArr,
+                госреестр: (String(ch['Госреестр'] || ch['госреестр'] || '')).toLowerCase().includes('да') ? 'да' : (String(ch['Госреестр'] || ch['госреестр'] || '') ? ch['Госреестр'] : ''),
+                'Малоразмерные объекты': (String(ch['Малоразмерные объекты'] || ch['Для малых объектов'] || '')).toLowerCase().includes('да') ? 'да' : (String(ch['Малоразмерные объекты'] || '') ? ch['Малоразмерные объекты'] : ''),
                 температураМин: parseInt(ch['Температура мин']) || parseInt(ch['температура мин']) || 0,
                 температураМакс: parseInt(ch['Температура макс']) || parseInt(ch['температура макс']) || 0
             }
@@ -121,8 +109,7 @@ class CatalogManager {
             точность: [],
             устройствоВизирования: [],
             госреестр: [],
-            дляМалыхОбъектов: [],
-            особенности: []
+            малоразмерныеОбъекты: []
         };
         // Map UI filter keys (data-filter values) to normalized characteristic keys
         this.filterKeyMap = {
@@ -134,7 +121,7 @@ class CatalogManager {
             'точность': 'точность',
             'устройствоВизирования': 'устройствоВизирования',
             'госреестр': 'госреестр',
-            'особенности': 'особенности',
+            'малоразмерныеОбъекты': 'Малоразмерные объекты',
             'temperature': 'temperature'
         };
         this.searchQuery = '';
@@ -145,18 +132,171 @@ class CatalogManager {
     }
 
     initTemperatureSlider() {
-        // Слайдер убран: фильтр температуры работает только через радиокнопки-предустановки.
-        return;
+        const tempMin = document.getElementById('tempMin');
+        const tempMax = document.getElementById('tempMax');
+        const tempMinInput = document.getElementById('tempMinInput');
+        const tempMaxInput = document.getElementById('tempMaxInput');
+        const minValue = document.getElementById('minValue');
+        const maxValue = document.getElementById('maxValue');
+        const rangeTrack = document.getElementById('rangeTrack');
+
+        if (!tempMin || !tempMax) return;
+        const presetCheckboxes = Array.from(document.querySelectorAll('.temp-range-checkbox'));
+        const self = this;
+
+        const initialMax = 3000;
+        const extendedMax = 3800;
+
+        const updateSlider = () => {
+            const min = parseInt(tempMin.value);
+            const max = parseInt(tempMax.value);
+            
+            minValue.textContent = min + '°C';
+            maxValue.textContent = max + '°C';
+            
+            tempMinInput.value = min;
+            tempMaxInput.value = max;
+            
+            // Update track gradient - полный градиент от синего к красному
+            // choose denominator depending on whether we are extended
+            const denom = (parseInt(tempMax.max) || initialMax);
+            const minPercent = (min / denom) * 100;
+            const maxPercent = (max / denom) * 100;
+            
+            rangeTrack.style.background = `linear-gradient(90deg, 
+                #ddd 0%, 
+                #ddd ${minPercent}%, 
+                #3498db ${minPercent}%, 
+                #2ecc71 ${minPercent + (maxPercent - minPercent) * 0.25}%, 
+                #f1c40f ${minPercent + (maxPercent - minPercent) * 0.5}%, 
+                #e67e22 ${minPercent + (maxPercent - minPercent) * 0.75}%, 
+                #e74c3c ${maxPercent}%, 
+                #ddd ${maxPercent}%, 
+                #ddd 100%)`;
+            
+            if (min >= max) {
+                tempMin.value = max - 50;
+                updateSlider();
+            }
+            // Update preset checkboxes: check only when slider matches a preset exactly
+            presetCheckboxes.forEach(cb => {
+                const pMin = parseInt(cb.getAttribute('data-min'));
+                const pMax = parseInt(cb.getAttribute('data-max'));
+                if (pMin === parseInt(tempMin.value) && pMax === parseInt(tempMax.value)) {
+                    cb.checked = true;
+                } else {
+                    cb.checked = false;
+                }
+            });
+        };
+
+        tempMin.addEventListener('input', () => {
+            // если пользователь двигает слайдер, сбрасываем пресеты
+            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
+            updateSlider();
+            this.applyTemperatureFilter();
+        });
+        tempMax.addEventListener('input', () => {
+            // If user moved right handle to current max, enable optional extension
+            if (parseInt(tempMax.value) >= parseInt(tempMax.max) && parseInt(tempMax.max) === initialMax) {
+                tempMin.max = extendedMax;
+                tempMax.max = extendedMax;
+                tempMaxInput.max = extendedMax;
+                // keep current value (was equal to initialMax)
+            }
+            // если пользователь двигает слайдер, сбрасываем пресеты
+            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
+            updateSlider();
+            this.applyTemperatureFilter();
+        });
+
+        // Preset checkbox handling
+        presetCheckboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                const pMin = parseInt(this.getAttribute('data-min'));
+                const pMax = parseInt(this.getAttribute('data-max'));
+                // When a preset is checked, add its range to currentFilters.temperature
+                if (this.checked) {
+                    // If shift/ctrl is NOT held, clear other presets (allow multi-select if user holds ctrl)
+                    if (!window.event || !window.event.ctrlKey) {
+                        presetCheckboxes.forEach(other => { if (other !== this) other.checked = false; });
+                        self.currentFilters.temperature = [];
+                    }
+                    const rangeStr = `${pMin}-${pMax}`;
+                    if (!self.currentFilters.temperature.includes(rangeStr)) {
+                        self.currentFilters.temperature.push(rangeStr);
+                    }
+                    // set slider to this preset
+                    tempMin.value = pMin;
+                    tempMax.value = pMax;
+                    updateSlider();
+                    self.applyFilters();
+                } else {
+                    // remove range
+                    const rangeStr = `${pMin}-${pMax}`;
+                    self.currentFilters.temperature = self.currentFilters.temperature.filter(r => r !== rangeStr);
+                    // if no presets remain checked, set slider to full range
+                    const anyChecked = presetCheckboxes.some(x => x.checked);
+                    if (!anyChecked) {
+                        tempMin.value = 0;
+                        tempMax.value = parseInt(tempMax.max) || 3000;
+                        updateSlider();
+                    }
+                    self.applyFilters();
+                }
+            });
+        });
+
+        tempMinInput.addEventListener('input', function() {
+            let value = parseInt(this.value);
+            if (isNaN(value)) value = 0;
+            if (value < 0) value = 0;
+            // respect extended max if available
+            const maxAllowed = parseInt(tempMin.max) || initialMax;
+            if (value > maxAllowed) value = maxAllowed;
+            if (value >= parseInt(tempMax.value)) value = parseInt(tempMax.value) - 50;
+            tempMin.value = value;
+            updateSlider();
+            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
+            catalog.applyTemperatureFilter();
+        });
+
+        tempMaxInput.addEventListener('input', function() {
+            let value = parseInt(this.value);
+            if (isNaN(value)) value = 3000;
+            if (value < 0) value = 0;
+            // respect extended max if available
+            const maxAllowed = parseInt(tempMax.max) || initialMax;
+            if (value > maxAllowed) value = maxAllowed;
+            if (value <= parseInt(tempMin.value)) value = parseInt(tempMin.value) + 50;
+            tempMax.value = value;
+            updateSlider();
+            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
+            catalog.applyTemperatureFilter();
+        });
+
+        // Initialize slider with full (base) range
+        tempMin.value = 0;
+        tempMax.value = initialMax;
+        tempMin.max = initialMax;
+        tempMax.max = initialMax;
+        tempMaxInput.max = initialMax;
+        updateSlider();
     }
 
     applyTemperatureFilter() {
-        const checked = document.querySelector('input[name="tempPreset"]:checked');
-        const val = checked ? checked.value : 'preset:none';
-        this.applyPresetTemperature(val);
+        // If we are programmatically applying a preset, skip the slider handler
+        if (this.__presetApplying) return;
+        const tempMin = parseInt(document.getElementById('tempMin').value);
+        const tempMax = parseInt(document.getElementById('tempMax').value);
+        
+        this.currentFilters.temperature = [`${tempMin}-${tempMax}`];
+        this.currentPage = 1;
+        this.applyFilters();
     }
 
     setupEventListeners() {
-        // Presет температуры: один выбор
+        // Preset temperature radios
         document.querySelectorAll('input[name="tempPreset"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 if (!e.target.checked) return;
@@ -303,14 +443,11 @@ class CatalogManager {
                         });
                         if (!matchesViz) return false;
                     } else if (filterType === 'госреестр') {
-                        const prodValue = String(product.characteristics[filterType] || '').toLowerCase();
-                        if (!selectedValues.some(sel => prodValue.includes(String(sel).toLowerCase()))) {
+                        if (product.characteristics[filterType] !== 'да') {
                             return false;
                         }
-                    } else if (filterType === 'дляМалыхОбъектов') {
-                        // For small objects filter, check if characteristic contains "да" or similar positive value
-                        const val = String(product.characteristics[filterType] || '').toLowerCase();
-                        if (!val.includes('да') && !val.includes('позвол')) {
+                    } else if (filterType === 'малоразмерныеОбъекты') {
+                        if (product.characteristics['Малоразмерные объекты'] !== 'да') {
                             return false;
                         }
                     } else {
@@ -350,43 +487,35 @@ class CatalogManager {
         const bounds = this.getTemperatureBounds(product);
         if (!Number.isFinite(bounds.min) || !Number.isFinite(bounds.max)) return false;
         
-        // Helper: проверяет что ОБОЗНАЧЕНИЯ границы товара находятся ВНУТРИ диапазона фильтра
-        const isWithinRange = (productMin, productMax, filterMin, filterMax) => {
-            return filterMin <= productMin && productMax <= filterMax;
-        };
-        
         return selectedRanges.some(range => {
-            switch (range) {
-                case 'preset:to3000':
-                    // до 3000 °С - товары ПОЛНОСТЬЮ вмещаются до 3000
-                    // т.е. 600-1800 ✅, но 1800-3000 ❌
-                    return bounds.max <= 3000;
-                    
-                case 'preset:to1800':
-                    // до 1800 °С - товары ПОЛНОСТЬЮ вмещаются до 1800
-                    // т.е. 600-1800 ✅, но 1800-2000 ❌
-                    return bounds.max <= 1800;
-                    
-                case 'preset:250-2000':
-                    // 250-2000 - товары ПОЛНОСТЬЮ попадают в этот диапазон
-                    // т.е. 600-1800 ✅, но 200-1800 ❌, и 1800-3000 ❌
-                    return isWithinRange(bounds.min, bounds.max, 250, 2000);
-                    
-                case 'preset:200-1200':
-                    // 200-1200 - товары ПОЛНОСТЬЮ попадают в этот диапазон
-                    // ИЛИ товары ПОЛНОСТЬЮ попадают в 300-1400 (связанный диапазон)
-                    return isWithinRange(bounds.min, bounds.max, 200, 1200) || 
-                           isWithinRange(bounds.min, bounds.max, 300, 1400);
-                    
-                case 'preset:from0':
-                    // от 0 °С - товары которые начинаются с 0
-                    return bounds.min === 0;
-                    
-                case 'preset:none':
-                    return true;
-                    
-                default:
-                    return false;
+            if (String(range).startsWith('preset:')) {
+                switch (range) {
+                    case 'preset:to3000':
+                        // All products with max <= 3000
+                        return bounds.max <= 3000;
+                    case 'preset:to1800':
+                        // Products with max <= 1800 OR (250-2000)
+                        if (bounds.max <= 1800) return true;
+                        if (bounds.min === 250 && bounds.max === 2000) return true;
+                        return false;
+                    case 'preset:250-2000':
+                        // Only products with exactly 250-2000
+                        return bounds.min === 250 && bounds.max === 2000;
+                    case 'preset:200-1200':
+                        // Products with (200-1200) OR (300-1400)
+                        if ((bounds.min === 200 && bounds.max === 1200) || (bounds.min === 300 && bounds.max === 1400)) return true;
+                        return false;
+                    case 'preset:from0':
+                        // Products starting from 0
+                        return bounds.min === 0;
+                    default:
+                        return false;
+                }
+            } else {
+                // For manual slider ranges
+                const [min, max] = String(range).split('-').map(Number);
+                if (!Number.isFinite(min) || !Number.isFinite(max)) return true;
+                return bounds.min <= max && bounds.max >= min;
             }
         });
     }
@@ -416,10 +545,54 @@ class CatalogManager {
 
     applyPresetTemperature(presetToken) {
         this.__presetApplying = true;
-        try {} finally { this.__presetApplying = false; }
-        this.currentFilters.temperature = (presetToken && presetToken !== 'preset:none') ? [presetToken] : [];
+        try {
+            const tempMinEl = document.getElementById('tempMin');
+            const tempMaxEl = document.getElementById('tempMax');
+            switch (presetToken) {
+                case 'preset:to3000':
+                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
+                case 'preset:to1800':
+                    tempMinEl.value = 0; tempMaxEl.value = 1800; break;
+                case 'preset:250-2000':
+                    tempMinEl.value = 250; tempMaxEl.value = 2000; break;
+                case 'preset:200-1200':
+                    tempMinEl.value = 200; tempMaxEl.value = 1200; break;
+                case 'preset:from0':
+                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
+                default:
+                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
+            }
+            try { tempMinEl.dispatchEvent(new Event('input')); tempMaxEl.dispatchEvent(new Event('input')); } catch (e) {}
+        } finally {
+            this.__presetApplying = false;
+        }
+
+        this.currentFilters.temperature = [presetToken];
         this.currentPage = 1;
         this.applyFilters();
+    }
+
+    // Try to extract numeric temperature bounds even if only a string range is present
+    getTemperatureBounds(product) {
+        const ch = product.characteristics || {};
+        let pMin = Number(ch.температураМин);
+        let pMax = Number(ch.температураМакс);
+
+        // Fallback: parse from text range like "200-1200°С" or "0 ... 3000"
+        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
+            const rangeStr = ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['диапазон'] || '';
+            const nums = String(rangeStr).match(/-?\d+/g);
+            if (nums && nums.length >= 2) {
+                pMin = Number(nums[0]);
+                pMax = Number(nums[1]);
+            }
+        }
+
+        // If still invalid, mark as not filterable
+        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
+            return { min: NaN, max: NaN };
+        }
+        return { min: pMin, max: pMax };
     }
 
     sortProducts(products) {
@@ -450,12 +623,11 @@ class CatalogManager {
             checkbox.checked = false;
         });
 
+        document.getElementById('tempMin').value = 0;
+        document.getElementById('tempMax').value = 3000;
+        this.initTemperatureSlider();
         // Сброс пресетов радио
-        try {
-            document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
-            const noneRadio = document.querySelector('input[name="tempPreset"][value="preset:none"]');
-            if (noneRadio) noneRadio.checked = true;
-        } catch (e) {}
+        try { document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false); } catch (e) {}
 
         document.getElementById('searchInput').value = '';
         document.getElementById('sortSelect').value = 'popular';
@@ -471,9 +643,7 @@ class CatalogManager {
             быстродействие: [],
             точность: [],
             устройствоВизирования: [],
-            госреестр: [],
-            дляМалыхОбъектов: [],
-            особенности: []
+            госреестр: []
         };
         this.searchQuery = '';
         this.sortBy = 'popular';
@@ -541,12 +711,15 @@ class CatalogManager {
         }
         grid.innerHTML = paginatedProducts.map(product => {
             const characteristics = product.characteristics || {};
-            // Обрезка описания до 15 символов с троеточием
+            // Обрезка описания до кратного формата в списке (120 символов)
             let shortDesc = product.description || '';
             if (!shortDesc) shortDesc = 'Описание отсутствует';
-            if (shortDesc.length > 15) {
-                shortDesc = shortDesc.slice(0, 15) + '...';
-            }
+            let descLines = shortDesc.split('\n');
+            if (descLines.length > 2) descLines = descLines.slice(0, 2);
+            shortDesc = descLines.join(' ');
+            if (shortDesc.length > 120) shortDesc = shortDesc.slice(0, 120);
+            const isDescTruncated = shortDesc.length < (product.description || '').length;
+            if (isDescTruncated) shortDesc += '...';
             // Исполнение (множественный выбор)
             let exec = Array.isArray(characteristics.исполнение) ? characteristics.исполнение.join(', ') : (characteristics.исполнение || 'Не указано');
             // Галерея изображений
@@ -576,7 +749,7 @@ class CatalogManager {
                     <h3 class="product-card__title">${product.title || 'Без названия'}</h3>
                     <p class="product-card__sku">Артикул: ${sku}</p>
                     <p class="product-card__description" data-id="${product.id}" data-expanded="false">${shortDesc}</p>
-                    ${shortDesc.length < (product.description || '').length ? `
+                    ${isDescTruncated ? `
                     <button type="button" class="product-card__description-toggle" data-id="${product.id}">
                         Показать полностью
                     </button>` : ''}
@@ -768,8 +941,19 @@ class CatalogManager {
                 descNode.style.display = descNode.style.display || '';
             }
         } catch (err) { console.error('openProductPopup diagnostic error', err); }
-        // Описание по умолчанию показывает краткую версию (short-desc), 
-        // полная версия скрывается и показывается при клике на кнопку "Развернуть описание"
+        // For debugging: force-show full description by default so it's visible
+        try {
+            const descNodeForce = popupBody.querySelector('.popup__description');
+            if (descNodeForce) {
+                const shortSpanF = descNodeForce.querySelector('.short-desc');
+                const fullSpanF = descNodeForce.querySelector('.full-desc');
+                const btnF = descNodeForce.querySelector('button.btn--link');
+                if (fullSpanF) fullSpanF.style.display = 'block';
+                if (shortSpanF) shortSpanF.style.display = 'none';
+                if (btnF) { btnF.textContent = 'Свернуть описание'; btnF.setAttribute('aria-expanded', 'true'); }
+                descNodeForce.classList.add('expanded');
+            }
+        } catch (err) { console.error('force-show description error', err); }
 
         document.getElementById('productPopup').classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -789,23 +973,17 @@ class CatalogManager {
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         };
         const characteristics = product.characteristics || {};
-        // Для краткого описания показываем первые 3-4 строки
+        // Обрезка описания до 3-4 строк
         let shortDesc = product.description || '';
-        if (shortDesc) {
-            // Разбиваем на строки и берем первые 3-4
-            const lines = shortDesc.split('\n').filter(l => l.trim());
-            shortDesc = lines.slice(0, 3).join('\n');
-            // Если осталось очень много текста в одной строке, обрезаем до ~300 символов
-            if (shortDesc.length > 300) {
-                shortDesc = shortDesc.substring(0, 300) + '...';
-            }
-        } else {
-            shortDesc = 'Описание отсутствует';
-        }
-        // Для полного описания показываем весь текст
+        if (!shortDesc) shortDesc = 'Описание отсутствует';
+        let descLines = shortDesc.split('\n');
+        if (descLines.length > 4) descLines = descLines.slice(0, 4);
+        shortDesc = descLines.join(' ');
+        if (shortDesc.length > 300) shortDesc = shortDesc.slice(0, 300);
+        if (shortDesc.length < (product.description || '').length) shortDesc += '...';
         let exec = Array.isArray(characteristics.исполнение) ? characteristics.исполнение.join(', ') : (characteristics.исполнение || 'Не указано');
         let materials = Array.isArray(characteristics['Измеряемые материалы и среды']) ? characteristics['Измеряемые материалы и среды'].join(', ') : (characteristics['Измеряемые материалы и среды'] || 'Не указаны');
-        let features = Array.isArray(characteristics.особенности) ? characteristics.особенности.join(', ') : (characteristics.особенности || 'Не указаны');
+        let features = Array.isArray(characteristics['Особенности применения']) ? characteristics['Особенности применения'].join(', ') : (characteristics['Особенности применения'] || 'Не указаны');
         // Gallery: main image + thumbnails
         let mainImageHtml = '';
         let thumbsHtml = '';
@@ -822,16 +1000,11 @@ class CatalogManager {
             thumbsHtml = '';
         }
         let sku = Array.isArray(product.sku) ? product.sku.join(', ') : (product.sku || 'Не указан');
-        // Экранируем описание для безопасности
-        const shortDescEsc = escapeHtml(shortDesc);
+        // include both short and full description (full hidden) so toggle works reliably
         const fullDescRaw = product.description && product.description.trim() ? product.description : 'Описание отсутствует';
-        const fullDescEsc = escapeHtml(fullDescRaw);
-        const isYes = (val) => {
-            const v = String(val || '').toLowerCase();
-            return v.includes('да') || v.includes('внес') || v.includes('позвол') || v === 'да';
-        };
-        const registryYes = isYes(characteristics.госреестр);
-        const smallYes = isYes(characteristics.дляМалыхОбъектов);
+        const fullDesc = escapeHtml(fullDescRaw);
+        const shortDescRaw = shortDesc || '';
+        const shortDescEsc = escapeHtml(shortDescRaw);
         return `
             <div class="popup__content">
                 <div class="popup__gallery">
@@ -852,11 +1025,20 @@ class CatalogManager {
                     <span class="popup__badge">${product.category || 'Категория не указана'}</span>
                     <h1>${product.title || 'Без названия'}</h1>
                     <div class="popup__price">${this.formatPrice(product.price)} ₽</div>
-                    <p class="popup__description">
-                        <span class="short-desc" style="display:block">${shortDescEsc}</span>
-                        <span class="full-desc" style="display:none">${fullDescEsc}</span>
-                        <button class="btn btn--link" onclick="catalog.showFullDescription('${product.id}')" aria-expanded="false">Развернуть описание</button>
-                    </p>
+                    
+                    ${fullDescRaw && fullDescRaw !== 'Описание отсутствует' ? `
+                    <div class="popup__description-section">
+                        <h3 style="margin-top: 20px; margin-bottom: 12px; font-size: 16px;">Описание</h3>
+                        <div class="popup__description-full" style="background: #f9f9f9; padding: 12px; border-radius: 4px; margin-bottom: 20px; line-height: 1.6; color: #555; word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap;">
+                            ${fullDesc}
+                        </div>
+                    </div>
+                    ` : `
+                    <div class="popup__description-section">
+                        <p style="margin-top: 20px; color: #999; font-style: italic;">Описание отсутствует</p>
+                    </div>
+                    `}
+                    
                     <div class="popup__specs">
                         <div class="popup__spec">
                             <strong>Артикул:</strong>
@@ -887,6 +1069,10 @@ class CatalogManager {
                             <span>${materials}</span>
                         </div>
                         <div class="popup__spec">
+                            <strong>Особенности применения:</strong>
+                            <span>${features}</span>
+                        </div>
+                        <div class="popup__spec">
                             <strong>Исполнение:</strong>
                             <span>${exec}</span>
                         </div>
@@ -900,16 +1086,12 @@ class CatalogManager {
                         </div>
                         <div class="popup__spec">
                             <strong>Госреестр:</strong>
-                            <span>${registryYes ? 'Внесен' : 'Не внесен'}</span>
+                            <span>${characteristics.госреестр === 'да' ? 'Внесен' : 'Не внесен'}</span>
                         </div>
+                        ${characteristics.дляМалыхОбъектов ? `
                         <div class="popup__spec">
                             <strong>Для малых объектов:</strong>
-                            <span>${smallYes ? 'Да' : 'Нет'}</span>
-                        </div>
-                        ${features && features !== 'Не указаны' ? `
-                        <div class="popup__spec">
-                            <strong>Особенности применения:</strong>
-                            <span>${features}</span>
+                            <span>${characteristics.дляМалыхОбъектов === 'да' ? 'Да' : 'Нет'}</span>
                         </div>
                         ` : ''}
                     </div>
@@ -976,19 +1158,13 @@ class CatalogManager {
                 // collapse
                 if (fullSpan) fullSpan.style.display = 'none';
                 if (shortSpan) shortSpan.style.display = 'block';
-                if (btn) {
-                    btn.textContent = 'Развернуть описание';
-                    btn.setAttribute('aria-expanded', 'false');
-                }
+                if (btn) btn.textContent = 'Развернуть описание';
                 desc.classList.remove('expanded');
             } else {
                 // expand
                 if (fullSpan) fullSpan.style.display = 'block';
                 if (shortSpan) shortSpan.style.display = 'none';
-                if (btn) {
-                    btn.textContent = 'Свернуть описание';
-                    btn.setAttribute('aria-expanded', 'true');
-                }
+                if (btn) btn.textContent = 'Свернуть описание';
                 desc.classList.add('expanded');
                 // Scroll popup content slightly to keep the button visible on expand
                 const body = document.querySelector('.product-popup__body');
@@ -1128,69 +1304,6 @@ class CatalogManager {
             thumbnails.forEach(t => t.classList.remove('active'));
             thumbnails[0].classList.add('active');
         }
-
-        // Fullscreen lightbox on click with переключением
-        const sources = thumbnails.map(t => t.getAttribute('data-src')).filter(Boolean);
-        if (!sources.length && mainImg && mainImg.src) {
-            sources.push(mainImg.src);
-        }
-        const openLightbox = (startIndex = 0) => {
-            let idx = startIndex;
-            const overlay = document.createElement('div');
-            overlay.style.cssText = `
-                position:fixed;top:0;left:0;width:100%;height:100%;
-                background:rgba(0,0,0,0.9);z-index:9999;display:flex;
-                align-items:center;justify-content:center;padding:16px;box-sizing:border-box;
-            `;
-            const img = document.createElement('img');
-            img.style.maxWidth = '100%';
-            img.style.maxHeight = '100%';
-            img.style.objectFit = 'contain';
-            img.style.boxShadow = '0 0 20px rgba(0,0,0,0.4)';
-            const closeBtn = document.createElement('button');
-            closeBtn.textContent = '×';
-            closeBtn.style.cssText = 'position:absolute;top:16px;right:20px;font-size:28px;color:#fff;background:none;border:none;cursor:pointer;';
-            const prevBtn = document.createElement('button');
-            prevBtn.textContent = '‹';
-            prevBtn.style.cssText = 'position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:32px;color:#fff;background:none;border:none;cursor:pointer;';
-            const nextBtn = document.createElement('button');
-            nextBtn.textContent = '›';
-            nextBtn.style.cssText = 'position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:32px;color:#fff;background:none;border:none;cursor:pointer;';
-
-            const show = () => { img.src = sources[idx]; };
-            const close = () => overlay.remove();
-            const prev = () => { idx = (idx - 1 + sources.length) % sources.length; show(); };
-            const next = () => { idx = (idx + 1) % sources.length; show(); };
-
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-            closeBtn.addEventListener('click', close);
-            prevBtn.addEventListener('click', prev);
-            nextBtn.addEventListener('click', next);
-            document.addEventListener('keydown', function handler(ev){
-                if (!document.body.contains(overlay)) { document.removeEventListener('keydown', handler); return; }
-                if (ev.key === 'Escape') close();
-                if (ev.key === 'ArrowLeft') prev();
-                if (ev.key === 'ArrowRight') next();
-            });
-
-            overlay.appendChild(img);
-            if (sources.length > 1) {
-                overlay.appendChild(prevBtn);
-                overlay.appendChild(nextBtn);
-            }
-            overlay.appendChild(closeBtn);
-            document.body.appendChild(overlay);
-            show();
-        };
-
-        if (sources.length) {
-            mainImg.style.cursor = 'zoom-in';
-            mainImg.addEventListener('click', () => openLightbox(thumbnails.findIndex(t => t.classList.contains('active')) || 0));
-        }
-
-        thumbnails.forEach((thumb, idx) => {
-            thumb.addEventListener('dblclick', () => openLightbox(idx));
-        });
     }
 }
 
@@ -1247,8 +1360,9 @@ let catalog;
 
 document.addEventListener('DOMContentLoaded', function() {
     catalog = new CatalogManager();
-    // Инициализация обработчиков
+    // Инициализация обработчиков и слайдера
     if (catalog.setupEventListeners) catalog.setupEventListeners();
+    if (catalog.initTemperatureSlider) catalog.initTemperatureSlider();
     // Sync initial sort with UI (so displayed sort matches internal state)
     try {
         const sortEl = document.getElementById('sortSelect');
