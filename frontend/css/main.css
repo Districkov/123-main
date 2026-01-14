@@ -3308,8 +3308,8 @@ select:focus {
     line-height: 1.7;
     margin-bottom: 25px;
     font-size: 16px;
-    max-height: 300px;
-    overflow: hidden;
+    max-height: none;
+    overflow: visible;
     position: relative;
     transition: max-height 0.25s ease;
     word-wrap: break-word;
@@ -3327,7 +3327,8 @@ select:focus {
 }
 
 .popup__description.expanded {
-    max-height: 3000px; /* large enough to show full text */
+    max-height: none;
+    overflow: visible;
 }
 
 .popup__description.expanded .short-desc {

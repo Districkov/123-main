@@ -378,39 +378,38 @@ class CatalogManager {
             }
 
             // Раскрытие/сворачивание описания товара в карточке
-            const catalogGrid = document.getElementById('catalogGrid');
-            if (catalogGrid) {
-                catalogGrid.addEventListener('click', (e) => {
-                    const toggleBtn = e.target.closest('.product-card__description-toggle');
-                    if (!toggleBtn) return;
-
-                    const card = toggleBtn.closest('.product-card');
-                    if (!card) return;
-
-                    const descEl = card.querySelector('.product-card__description');
-                    if (!descEl) return;
-
-                    const productId = descEl.getAttribute('data-id');
-                    const product = this.getProductById(productId);
-                    if (!product) return;
-
-                    const isExpanded = descEl.getAttribute('data-expanded') === 'true';
-
-                    if (!isExpanded) {
-                        // Сохраняем короткий текст в data-атрибут
-                        descEl.setAttribute('data-short', descEl.textContent);
-                        descEl.textContent = product.description || 'Описание отсутствует';
-                        descEl.setAttribute('data-expanded', 'true');
-                        toggleBtn.textContent = 'Свернуть описание';
-                    } else {
-                        const shortText = descEl.getAttribute('data-short') || '';
-                        descEl.textContent = shortText;
-                        descEl.setAttribute('data-expanded', 'false');
-                        toggleBtn.textContent = 'Показать полностью';
-                    }
-                });
+            const toggleBtn = e.target.closest('.product-card__description-toggle');
+            if (toggleBtn) {
+                this.handleDescriptionToggle(toggleBtn);
             }
         });
+    }
+
+    handleDescriptionToggle(toggleBtn) {
+        const card = toggleBtn.closest('.product-card');
+        if (!card) return;
+
+        const descEl = card.querySelector('.product-card__description');
+        if (!descEl) return;
+
+        const productId = descEl.getAttribute('data-id');
+        const product = this.getProductById(productId);
+        if (!product) return;
+
+        const isExpanded = descEl.getAttribute('data-expanded') === 'true';
+        const shortText = descEl.getAttribute('data-short') || '';
+
+        if (!isExpanded) {
+            // Разворачиваем - показываем полное описание
+            descEl.textContent = product.description || 'Описание отсутствует';
+            descEl.setAttribute('data-expanded', 'true');
+            toggleBtn.textContent = 'Свернуть описание';
+        } else {
+            // Сворачиваем - показываем короткое описание
+            descEl.textContent = shortText;
+            descEl.setAttribute('data-expanded', 'false');
+            toggleBtn.textContent = 'Показать полностью';
+        }
     }
 
     applyFilters() {
@@ -711,15 +710,13 @@ class CatalogManager {
         }
         grid.innerHTML = paginatedProducts.map(product => {
             const characteristics = product.characteristics || {};
-            // Обрезка описания до кратного формата в списке (120 символов)
+            // Обрезка описания до 15 символов в списке
             let shortDesc = product.description || '';
             if (!shortDesc) shortDesc = 'Описание отсутствует';
             let descLines = shortDesc.split('\n');
             if (descLines.length > 2) descLines = descLines.slice(0, 2);
             shortDesc = descLines.join(' ');
-            if (shortDesc.length > 120) shortDesc = shortDesc.slice(0, 120);
-            const isDescTruncated = shortDesc.length < (product.description || '').length;
-            if (isDescTruncated) shortDesc += '...';
+            if (shortDesc.length > 15) shortDesc = shortDesc.slice(0, 15) + '...';
             // Исполнение (множественный выбор)
             let exec = Array.isArray(characteristics.исполнение) ? characteristics.исполнение.join(', ') : (characteristics.исполнение || 'Не указано');
             // Галерея изображений
@@ -748,11 +745,7 @@ class CatalogManager {
                 <div class="product-card__content">
                     <h3 class="product-card__title">${product.title || 'Без названия'}</h3>
                     <p class="product-card__sku">Артикул: ${sku}</p>
-                    <p class="product-card__description" data-id="${product.id}" data-expanded="false">${shortDesc}</p>
-                    ${isDescTruncated ? `
-                    <button type="button" class="product-card__description-toggle" data-id="${product.id}">
-                        Показать полностью
-                    </button>` : ''}
+                    <p class="product-card__description" data-id="${product.id}">${shortDesc}</p>
                     <div class="product-card__characteristics">
                         <div class="characteristic">
                             <span class="characteristic__label">Диапазон:</span>
@@ -799,6 +792,36 @@ class CatalogManager {
             </div>
             `;
         }).join('');
+        
+        // Add event listeners for description toggle buttons
+        document.querySelectorAll('.product-card__description-toggle').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const productId = btn.dataset.id;
+                const descEl = document.querySelector(`.product-card__description[data-id="${productId}"]`);
+                const product = this.getProductById(productId);
+                if (!descEl || !product) return;
+                
+                const isExpanded = descEl.dataset.expanded === 'true';
+                if (isExpanded) {
+                    // collapse
+                    let shortDesc = product.description || '';
+                    if (!shortDesc) shortDesc = 'Описание отсутствует';
+                    let descLines = shortDesc.split('\n');
+                    if (descLines.length > 2) descLines = descLines.slice(0, 2);
+                    shortDesc = descLines.join(' ');
+                    if (shortDesc.length > 120) shortDesc = shortDesc.slice(0, 120) + '...';
+                    descEl.textContent = shortDesc;
+                    btn.textContent = 'Показать полностью';
+                    descEl.dataset.expanded = 'false';
+                } else {
+                    // expand
+                    descEl.textContent = product.description || 'Описание отсутствует';
+                    btn.textContent = 'Свернуть';
+                    descEl.dataset.expanded = 'true';
+                }
+            });
+        });
     }
 
     renderPagination() {
@@ -890,70 +913,6 @@ class CatalogManager {
         const popupBody = document.getElementById('productPopupBody');
         
         popupBody.innerHTML = this.createPopupContent(product);
-        // Diagnostics and defensive fixes: ensure description was injected and visible
-        try {
-            console.log('openProductPopup: product.description raw=', product.description);
-            const descNode = popupBody.querySelector('.popup__description');
-            console.log('openProductPopup: popup description node exists=', !!descNode);
-            if (descNode) {
-                console.log('openProductPopup: popup description text=', descNode.innerText && descNode.innerText.trim().slice(0,200));
-                // Defensive: ensure both spans exist; if markup from elsewhere omitted them, recreate safely
-                let shortSpan = descNode.querySelector('.short-desc');
-                let fullSpan = descNode.querySelector('.full-desc');
-                if (!shortSpan) {
-                    shortSpan = document.createElement('span');
-                    shortSpan.className = 'short-desc';
-                    shortSpan.style.display = 'inline';
-                    shortSpan.textContent = (product.description || 'Описание отсутствует').split('\n').slice(0,4).join(' ').slice(0,300);
-                    descNode.insertBefore(shortSpan, descNode.firstChild);
-                }
-                if (!fullSpan) {
-                    fullSpan = document.createElement('span');
-                    fullSpan.className = 'full-desc';
-                    fullSpan.style.display = 'none';
-                    fullSpan.textContent = product.description || 'Описание отсутствует';
-                    // insert after shortSpan
-                    if (shortSpan.nextSibling) descNode.insertBefore(fullSpan, shortSpan.nextSibling);
-                    else descNode.appendChild(fullSpan);
-                }
-
-                // Compute actual computed display values
-                const shortStyle = window.getComputedStyle(shortSpan);
-                const fullStyle = window.getComputedStyle(fullSpan);
-
-                // If short is hidden but contains text, force it visible
-                if ((shortStyle.display === 'none' || shortStyle.visibility === 'hidden') && shortSpan.textContent.trim() !== '') {
-                    shortSpan.style.display = 'inline';
-                    shortSpan.style.visibility = 'visible';
-                    console.log('openProductPopup: forced short-desc visible');
-                }
-
-                // If both hidden or short empty but full has text, show full
-                if ((shortSpan.textContent.trim() === '' || (shortStyle.display === 'none' && fullStyle.display === 'none')) && fullSpan && fullSpan.textContent.trim() !== '') {
-                    fullSpan.style.display = 'block';
-                    if (shortSpan) shortSpan.style.display = 'none';
-                    descNode.classList.add('expanded');
-                    console.log('openProductPopup: showed full-desc because short-desc empty or hidden');
-                }
-
-                // Reset potential harmful inline styles on the container
-                descNode.style.color = descNode.style.color || '';
-                descNode.style.display = descNode.style.display || '';
-            }
-        } catch (err) { console.error('openProductPopup diagnostic error', err); }
-        // For debugging: force-show full description by default so it's visible
-        try {
-            const descNodeForce = popupBody.querySelector('.popup__description');
-            if (descNodeForce) {
-                const shortSpanF = descNodeForce.querySelector('.short-desc');
-                const fullSpanF = descNodeForce.querySelector('.full-desc');
-                const btnF = descNodeForce.querySelector('button.btn--link');
-                if (fullSpanF) fullSpanF.style.display = 'block';
-                if (shortSpanF) shortSpanF.style.display = 'none';
-                if (btnF) { btnF.textContent = 'Свернуть описание'; btnF.setAttribute('aria-expanded', 'true'); }
-                descNodeForce.classList.add('expanded');
-            }
-        } catch (err) { console.error('force-show description error', err); }
 
         document.getElementById('productPopup').classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -973,14 +932,6 @@ class CatalogManager {
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         };
         const characteristics = product.characteristics || {};
-        // Обрезка описания до 3-4 строк
-        let shortDesc = product.description || '';
-        if (!shortDesc) shortDesc = 'Описание отсутствует';
-        let descLines = shortDesc.split('\n');
-        if (descLines.length > 4) descLines = descLines.slice(0, 4);
-        shortDesc = descLines.join(' ');
-        if (shortDesc.length > 300) shortDesc = shortDesc.slice(0, 300);
-        if (shortDesc.length < (product.description || '').length) shortDesc += '...';
         let exec = Array.isArray(characteristics.исполнение) ? characteristics.исполнение.join(', ') : (characteristics.исполнение || 'Не указано');
         let materials = Array.isArray(characteristics['Измеряемые материалы и среды']) ? characteristics['Измеряемые материалы и среды'].join(', ') : (characteristics['Измеряемые материалы и среды'] || 'Не указаны');
         let features = Array.isArray(characteristics['Особенности применения']) ? characteristics['Особенности применения'].join(', ') : (characteristics['Особенности применения'] || 'Не указаны');
@@ -1000,11 +951,9 @@ class CatalogManager {
             thumbsHtml = '';
         }
         let sku = Array.isArray(product.sku) ? product.sku.join(', ') : (product.sku || 'Не указан');
-        // include both short and full description (full hidden) so toggle works reliably
+        // Описание товара - полное
         const fullDescRaw = product.description && product.description.trim() ? product.description : 'Описание отсутствует';
         const fullDesc = escapeHtml(fullDescRaw);
-        const shortDescRaw = shortDesc || '';
-        const shortDescEsc = escapeHtml(shortDescRaw);
         return `
             <div class="popup__content">
                 <div class="popup__gallery">
@@ -1026,18 +975,10 @@ class CatalogManager {
                     <h1>${product.title || 'Без названия'}</h1>
                     <div class="popup__price">${this.formatPrice(product.price)} ₽</div>
                     
-                    ${fullDescRaw && fullDescRaw !== 'Описание отсутствует' ? `
-                    <div class="popup__description-section">
-                        <h3 style="margin-top: 20px; margin-bottom: 12px; font-size: 16px;">Описание</h3>
-                        <div class="popup__description-full" style="background: #f9f9f9; padding: 12px; border-radius: 4px; margin-bottom: 20px; line-height: 1.6; color: #555; word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap;">
-                            ${fullDesc}
-                        </div>
+                    <div class="popup__description">
+                        <h3 style="color: #000;">Описание товара</h3>
+                        <p>${fullDesc}</p>
                     </div>
-                    ` : `
-                    <div class="popup__description-section">
-                        <p style="margin-top: 20px; color: #999; font-style: italic;">Описание отсутствует</p>
-                    </div>
-                    `}
                     
                     <div class="popup__specs">
                         <div class="popup__spec">
@@ -1142,37 +1083,6 @@ class CatalogManager {
             return `${normalized}%`;
         }
         return String(val);
-    }
-
-    showFullDescription(productId) {
-        const popup = document.getElementById('productPopup');
-        if (!popup) return;
-        const desc = popup.querySelector('.popup__description');
-        if (!desc) return;
-        const shortSpan = desc.querySelector('.short-desc');
-        const fullSpan = desc.querySelector('.full-desc');
-        const btn = desc.querySelector('button.btn--link');
-        const isExpanded = desc.classList.contains('expanded') || (fullSpan && window.getComputedStyle(fullSpan).display !== 'none');
-        try {
-            if (isExpanded) {
-                // collapse
-                if (fullSpan) fullSpan.style.display = 'none';
-                if (shortSpan) shortSpan.style.display = 'block';
-                if (btn) btn.textContent = 'Развернуть описание';
-                desc.classList.remove('expanded');
-            } else {
-                // expand
-                if (fullSpan) fullSpan.style.display = 'block';
-                if (shortSpan) shortSpan.style.display = 'none';
-                if (btn) btn.textContent = 'Свернуть описание';
-                desc.classList.add('expanded');
-                // Scroll popup content slightly to keep the button visible on expand
-                const body = document.querySelector('.product-popup__body');
-                if (body) body.scrollTop = body.scrollTop + 20;
-            }
-        } catch (err) {
-            console.error('showFullDescription error', err);
-        }
     }
 
     printProduct(productId) {
