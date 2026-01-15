@@ -3621,3 +3621,113 @@ select:focus {
         font-size: 20px;
     }
 }
+
+/* Fullscreen Image Viewer */
+.image-viewer {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.95);
+}
+
+.image-viewer.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-viewer__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.image-viewer__content {
+    position: relative;
+    width: 90%;
+    height: 90%;
+    max-width: 1200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2001;
+}
+
+.image-viewer__main {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+}
+
+.image-viewer__main img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    user-select: none;
+}
+
+.image-viewer__close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 30px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2002;
+    transition: background 0.2s ease;
+}
+
+.image-viewer__close:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.image-viewer__prev,
+.image-viewer__next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 30px;
+    width: 50px;
+    height: 50px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2002;
+    transition: background 0.2s ease;
+}
+
+.image-viewer__prev {
+    left: 20px;
+}
+
+.image-viewer__next {
+    right: 20px;
+}
+
+.image-viewer__prev:hover,
+.image-viewer__next:hover {
+    background: rgba(255, 255, 255, 0.4);
+}

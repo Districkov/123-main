@@ -69,6 +69,11 @@ class CatalogManager {
         };
         const photos = rawProduct.photos && rawProduct.photos.length ? rawProduct.photos : (rawProduct.photo ? [rawProduct.photo] : []);
         const sku = rawProduct.sku;
+        const tempMin = parseInt(ch['Температура мин']) || parseInt(ch['температура_мин']) || 0;
+        const tempMax = parseInt(ch['Температура макс']) || parseInt(ch['температура_макс']) || 0;
+        
+        console.log(`normalizeProduct: ${rawProduct.title} - tempMin=${tempMin}, tempMax=${tempMax}`);
+        
         return {
             id: rawProduct.id || (rawProduct._id || Date.now().toString()),
             sku: Array.isArray(sku) ? sku : (sku ? String(sku) : ''),
@@ -81,18 +86,18 @@ class CatalogManager {
             characteristics: {
                 диапазон: ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['Диапазон измерений'] || ch['диапазон'] || '',
                 погрешность: formatPogreshnost(pogNum) || ch['Погрешность'] || ch['погрешность'] || '',
-                визирование: ch['Показатель визирования'] || ch['Показатель визирования (второе)'] || ch['показатель визирования'] || '',
-                принципДействия: ch['Принцип действия'] || ch['принцип действия'] || '',
-                спектральныйДиапазон: ch['Спектральный диапазон'] || ch['спектральный диапазон'] || '',
+                визирование: ch['Показатель визирования'] || ch['Показатель визирования (второе)'] || ch['показатель визирования'] || ch['визирование'] || '',
+                принципДействия: ch['Принцип действия'] || ch['принцип_действия'] || ch['принцип действия'] || '',
+                спектральныйДиапазон: ch['Спектральный диапазон'] || ch['спектральный_диапазон'] || ch['спектральный диапазон'] || '',
                 'Измеряемые материалы и среды': ch['Измеряемые материалы и среды'] || ch['Измеряемые материалы'] || ch['материалы'] || getArr(ch['Измеряемые материалы']) ,
                 исполнение: ch['Исполнение'] || ch['исполнение'] || getArr(ch['Исполнение']),
                 быстродействие: ch['Быстродействие'] || ch['быстродействие'] || '',
                 точность: accuracyLabel || ch['Точность'] || ch['точность'] || '',
-                устройствоВизирования: ch['Устройство визирования'] || ch['устройство визирования'] || '',
+                устройствоВизирования: ch['Устройство визирования'] || ch['устройство_визирования'] || ch['устройство визирования'] || '',
                 госреестр: (String(ch['Госреестр'] || ch['госреестр'] || '')).toLowerCase().includes('да') ? 'да' : (String(ch['Госреестр'] || ch['госреестр'] || '') ? ch['Госреестр'] : ''),
-                'Малоразмерные объекты': (String(ch['Малоразмерные объекты'] || ch['Для малых объектов'] || '')).toLowerCase().includes('да') ? 'да' : (String(ch['Малоразмерные объекты'] || '') ? ch['Малоразмерные объекты'] : ''),
-                температураМин: parseInt(ch['Температура мин']) || parseInt(ch['температура мин']) || 0,
-                температураМакс: parseInt(ch['Температура макс']) || parseInt(ch['температура макс']) || 0
+                'Малоразмерные объекты': (String(ch['Малоразмерные объекты'] || ch['Для малых объектов'] || ch['для_малых_объектов'] || '')).toLowerCase().includes('да') ? 'да' : (String(ch['Малоразмерные объекты'] || ch['для_малых_объектов'] || '') ? ch['Малоразмерные объекты'] : ''),
+                температураМин: tempMin,
+                температураМакс: tempMax
             }
         };
     }
@@ -129,6 +134,8 @@ class CatalogManager {
         this.currentProduct = null;
         this.currentPage = 1;
         this.productsPerPage = 6;
+        this.currentImages = [];
+        this.currentImageIndex = 0;
     }
 
     initTemperatureSlider() {
@@ -352,7 +359,6 @@ class CatalogManager {
                 this.toggleMobileFilters();
             }
         });
-
         document.querySelector('.product-popup__close').addEventListener('click', () => {
             this.closeProductPopup();
         });
@@ -361,9 +367,41 @@ class CatalogManager {
             this.closeProductPopup();
         });
 
+        // Fullscreen Image Viewer Controls
+        document.querySelector('.image-viewer__close').addEventListener('click', () => {
+            this.closeImageViewer();
+        });
+
+        document.querySelector('.image-viewer__overlay').addEventListener('click', () => {
+            this.closeImageViewer();
+        });
+
+        document.getElementById('imageViewerPrev').addEventListener('click', () => {
+            this.prevImage();
+        });
+
+        document.getElementById('imageViewerNext').addEventListener('click', () => {
+            this.nextImage();
+        });
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                this.closeProductPopup();
+                const viewer = document.getElementById('imageViewer');
+                if (viewer && viewer.classList.contains('active')) {
+                    this.closeImageViewer();
+                } else {
+                    this.closeProductPopup();
+                }
+            } else if (e.key === 'ArrowLeft') {
+                const viewer = document.getElementById('imageViewer');
+                if (viewer && viewer.classList.contains('active')) {
+                    this.prevImage();
+                }
+            } else if (e.key === 'ArrowRight') {
+                const viewer = document.getElementById('imageViewer');
+                if (viewer && viewer.classList.contains('active')) {
+                    this.nextImage();
+                }
             }
         });
 
@@ -484,7 +522,14 @@ class CatalogManager {
 
     checkTemperatureFilter(product, selectedRanges) {
         const bounds = this.getTemperatureBounds(product);
-        if (!Number.isFinite(bounds.min) || !Number.isFinite(bounds.max)) return false;
+        // Don't filter if we can't determine temperature bounds
+        if (!Number.isFinite(bounds.min) || !Number.isFinite(bounds.max)) {
+            // If both are exactly 0, still try to match
+            if (bounds.min === 0 && bounds.max === 0) {
+                // This product has no temperature data
+                return false;
+            }
+        }
         
         return selectedRanges.some(range => {
             if (String(range).startsWith('preset:')) {
@@ -543,29 +588,10 @@ class CatalogManager {
     }
 
     applyPresetTemperature(presetToken) {
-        this.__presetApplying = true;
-        try {
-            const tempMinEl = document.getElementById('tempMin');
-            const tempMaxEl = document.getElementById('tempMax');
-            switch (presetToken) {
-                case 'preset:to3000':
-                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
-                case 'preset:to1800':
-                    tempMinEl.value = 0; tempMaxEl.value = 1800; break;
-                case 'preset:250-2000':
-                    tempMinEl.value = 250; tempMaxEl.value = 2000; break;
-                case 'preset:200-1200':
-                    tempMinEl.value = 200; tempMaxEl.value = 1200; break;
-                case 'preset:from0':
-                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
-                default:
-                    tempMinEl.value = 0; tempMaxEl.value = 3000; break;
-            }
-            try { tempMinEl.dispatchEvent(new Event('input')); tempMaxEl.dispatchEvent(new Event('input')); } catch (e) {}
-        } finally {
-            this.__presetApplying = false;
-        }
-
+        console.log('applyPresetTemperature called with:', presetToken);
+        // Note: радиокнопки используются для выбора, элементы tempMin/tempMax не нужны
+        
+        console.log('Setting currentFilters.temperature to:', [presetToken]);
         this.currentFilters.temperature = [presetToken];
         this.currentPage = 1;
         this.applyFilters();
@@ -771,6 +797,11 @@ class CatalogManager {
                             <span class="characteristic__label">Исполнение:</span>
                             <span class="characteristic__value">${exec}</span>
                         </div>
+                        ${characteristics['Малоразмерные объекты'] === 'да' ? `
+                        <div class="characteristic">
+                            <span class="characteristic__label">Малоразмерные объекты:</span>
+                            <span class="characteristic__value" style="color: var(--primary-color); font-weight: bold;">Да</span>
+                        </div>` : ''}
                     </div>
                     <div class="product-card__footer">
                         <div class="product-card__price">
@@ -1029,10 +1060,10 @@ class CatalogManager {
                             <strong>Госреестр:</strong>
                             <span>${characteristics.госреестр === 'да' ? 'Внесен' : 'Не внесен'}</span>
                         </div>
-                        ${characteristics.дляМалыхОбъектов ? `
+                        ${characteristics['Малоразмерные объекты'] === 'да' ? `
                         <div class="popup__spec">
-                            <strong>Для малых объектов:</strong>
-                            <span>${characteristics.дляМалыхОбъектов === 'да' ? 'Да' : 'Нет'}</span>
+                            <strong>Малоразмерные объекты:</strong>
+                            <span>Да</span>
                         </div>
                         ` : ''}
                     </div>
@@ -1165,6 +1196,7 @@ class CatalogManager {
         mainImg.style.display = 'block';
         mainImg.style.transformOrigin = 'center center';
         mainImg.style.transition = 'transform 0.2s ease';
+        mainImg.style.cursor = 'pointer';
 
         // On load, check if natural size is smaller than container and upscale
         const tryUpscale = () => {
@@ -1195,8 +1227,13 @@ class CatalogManager {
             mainImg.addEventListener('error', () => { mainImg.style.transform = ''; });
         }
 
+        // Click on main image to open fullscreen viewer
+        mainImg.addEventListener('click', () => {
+            this.openImageViewer(product.photos && product.photos.length ? product.photos : [product.image], 0);
+        });
+
         // Wire thumbnails to swap main image when clicked
-        thumbnails.forEach(thumb => {
+        thumbnails.forEach((thumb, idx) => {
             thumb.addEventListener('click', (e) => {
                 const src = thumb.getAttribute('data-src');
                 if (!src) return;
@@ -1206,6 +1243,9 @@ class CatalogManager {
                 // active state
                 document.querySelectorAll('.popup__thumbnail.active').forEach(n => n.classList.remove('active'));
                 thumb.classList.add('active');
+                
+                // Store current index for fullscreen viewer
+                this.currentImageIndex = idx;
             });
         });
 
@@ -1213,6 +1253,56 @@ class CatalogManager {
         if (thumbnails.length) {
             thumbnails.forEach(t => t.classList.remove('active'));
             thumbnails[0].classList.add('active');
+            this.currentImageIndex = 0;
+        }
+    }
+
+    openImageViewer(images, startIndex = 0) {
+        const viewer = document.getElementById('imageViewer');
+        const viewerImg = document.getElementById('imageViewer-img');
+        
+        if (!viewer || !viewerImg || !images || images.length === 0) return;
+
+        this.currentImages = images.filter(img => img); // Filter out empty images
+        this.currentImageIndex = Math.min(startIndex, this.currentImages.length - 1);
+
+        if (this.currentImages.length === 0) return;
+
+        viewerImg.src = this.currentImages[this.currentImageIndex];
+        viewer.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // Update buttons visibility
+        this.updateImageViewerButtons();
+    }
+
+    closeImageViewer() {
+        const viewer = document.getElementById('imageViewer');
+        viewer.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    updateImageViewerButtons() {
+        const prevBtn = document.getElementById('imageViewerPrev');
+        const nextBtn = document.getElementById('imageViewerNext');
+        
+        if (prevBtn) prevBtn.style.display = this.currentImageIndex > 0 ? 'flex' : 'none';
+        if (nextBtn) nextBtn.style.display = this.currentImageIndex < this.currentImages.length - 1 ? 'flex' : 'none';
+    }
+
+    nextImage() {
+        if (this.currentImageIndex < this.currentImages.length - 1) {
+            this.currentImageIndex++;
+            document.getElementById('imageViewer-img').src = this.currentImages[this.currentImageIndex];
+            this.updateImageViewerButtons();
+        }
+    }
+
+    prevImage() {
+        if (this.currentImageIndex > 0) {
+            this.currentImageIndex--;
+            document.getElementById('imageViewer-img').src = this.currentImages[this.currentImageIndex];
+            this.updateImageViewerButtons();
         }
     }
 }
