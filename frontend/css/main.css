@@ -1924,7 +1924,7 @@ label.filter-radio input[type="radio"]:checked + span {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--white);
+    background: white;
 }
 
 .popup__main-image img {
@@ -3212,7 +3212,7 @@ select:focus {
     overflow: hidden;
     margin-bottom: 20px;
     box-shadow: var(--shadow);
-    background: var(--white);
+    background: white;
     display: flex;
     align-items: center;
     justify-content: center;

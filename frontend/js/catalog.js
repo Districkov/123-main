@@ -56,7 +56,7 @@ class CatalogManager {
             // если значение было в долях (0.005), переведем в проценты
             return num > 0 && num < 0.1 ? +(num * 100).toFixed(3) : num;
         };
-        const pogNum = parsePogreshnost(ch['Погрешность'] || ch['погрешность']);
+        const pogNum = parsePogreshnost(ch['погрешность']);
         const formatPogreshnost = (num) => {
             if (!Number.isFinite(num)) return '';
             return `${num}%`;
@@ -69,8 +69,8 @@ class CatalogManager {
         };
         const photos = rawProduct.photos && rawProduct.photos.length ? rawProduct.photos : (rawProduct.photo ? [rawProduct.photo] : []);
         const sku = rawProduct.sku;
-        const tempMin = parseInt(ch['Температура мин']) || parseInt(ch['температура_мин']) || 0;
-        const tempMax = parseInt(ch['Температура макс']) || parseInt(ch['температура_макс']) || 0;
+        const tempMin = parseInt(ch['температура_мин']) || 0;
+        const tempMax = parseInt(ch['температура_макс']) || 0;
         
         console.log(`normalizeProduct: ${rawProduct.title} - tempMin=${tempMin}, tempMax=${tempMax}`);
         
@@ -84,20 +84,21 @@ class CatalogManager {
             photos: photos,
             price: rawProduct.price || 0,
             characteristics: {
-                диапазон: ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['Диапазон измерений'] || ch['диапазон'] || '',
-                погрешность: formatPogreshnost(pogNum) || ch['Погрешность'] || ch['погрешность'] || '',
-                визирование: ch['Показатель визирования'] || ch['Показатель визирования (второе)'] || ch['показатель визирования'] || ch['визирование'] || '',
-                принципДействия: ch['Принцип действия'] || ch['принцип_действия'] || ch['принцип действия'] || '',
-                спектральныйДиапазон: ch['Спектральный диапазон'] || ch['спектральный_диапазон'] || ch['спектральный диапазон'] || '',
-                'Измеряемые материалы и среды': ch['Измеряемые материалы и среды'] || ch['Измеряемые материалы'] || ch['материалы'] || getArr(ch['Измеряемые материалы']) ,
-                исполнение: ch['Исполнение'] || ch['исполнение'] || getArr(ch['Исполнение']),
-                быстродействие: ch['Быстродействие'] || ch['быстродействие'] || '',
-                точность: accuracyLabel || ch['Точность'] || ch['точность'] || '',
-                устройствоВизирования: ch['Устройство визирования'] || ch['устройство_визирования'] || ch['устройство визирования'] || '',
-                госреестр: (String(ch['Госреестр'] || ch['госреестр'] || '')).toLowerCase().includes('да') ? 'да' : (String(ch['Госреестр'] || ch['госреестр'] || '') ? ch['Госреестр'] : ''),
-                'Малоразмерные объекты': (String(ch['Малоразмерные объекты'] || ch['Для малых объектов'] || ch['для_малых_объектов'] || '')).toLowerCase().includes('да') ? 'да' : (String(ch['Малоразмерные объекты'] || ch['для_малых_объектов'] || '') ? ch['Малоразмерные объекты'] : ''),
-                температураМин: tempMin,
-                температураМакс: tempMax
+                диапазон: ch['диапазон'] || '',
+                погрешность: formatPogreshnost(pogNum) || ch['погрешность'] || '',
+                визирование: ch['визирование'] || '',
+                принцип_действия: ch['принцип_действия'] || '',
+                спектральный_диапазон: ch['спектральный_диапазон'] || '',
+                материалы: getArr(ch['материалы']),
+                исполнение: getArr(ch['исполнение']),
+                быстродействие: ch['быстродействие'] || '',
+                точность: accuracyLabel || ch['точность'] || '',
+                устройство_визирования: ch['устройство_визирования'] || '',
+                госреестр: ch['госреестр'] || '',
+                для_малых_объектов: ch['для_малых_объектов'] || '',
+                особенности: getArr(ch['особенности']),
+                температура_мин: tempMin,
+                температура_макс: tempMax
             }
         };
     }
@@ -109,24 +110,26 @@ class CatalogManager {
             визирование: [],
             принципДействия: [],
             материалы: [],
+            особенности: [],
             исполнение: [],
             быстродействие: [],
             точность: [],
             устройствоВизирования: [],
             госреестр: [],
-            малоразмерныеОбъекты: []
+            для_малых_объектов: []
         };
         // Map UI filter keys (data-filter values) to normalized characteristic keys
         this.filterKeyMap = {
-            'материалы': 'Измеряемые материалы и среды',
+            'материалы': 'материалы',
             'визирование': 'визирование',
-            'принципДействия': 'принципДействия',
+            'принципДействия': 'принцип_действия',
+            'особенности': 'особенности',
             'исполнение': 'исполнение',
             'быстродействие': 'быстродействие',
             'точность': 'точность',
-            'устройствоВизирования': 'устройствоВизирования',
+            'устройствоВизирования': 'устройство_визирования',
             'госреестр': 'госреестр',
-            'малоразмерныеОбъекты': 'Малоразмерные объекты',
+            'для_малых_объектов': 'для_малых_объектов',
             'temperature': 'temperature'
         };
         this.searchQuery = '';
@@ -148,8 +151,6 @@ class CatalogManager {
         const rangeTrack = document.getElementById('rangeTrack');
 
         if (!tempMin || !tempMax) return;
-        const presetCheckboxes = Array.from(document.querySelectorAll('.temp-range-checkbox'));
-        const self = this;
 
         const initialMax = 3000;
         const extendedMax = 3800;
@@ -185,16 +186,6 @@ class CatalogManager {
                 tempMin.value = max - 50;
                 updateSlider();
             }
-            // Update preset checkboxes: check only when slider matches a preset exactly
-            presetCheckboxes.forEach(cb => {
-                const pMin = parseInt(cb.getAttribute('data-min'));
-                const pMax = parseInt(cb.getAttribute('data-max'));
-                if (pMin === parseInt(tempMin.value) && pMax === parseInt(tempMax.value)) {
-                    cb.checked = true;
-                } else {
-                    cb.checked = false;
-                }
-            });
         };
 
         tempMin.addEventListener('input', () => {
@@ -215,43 +206,6 @@ class CatalogManager {
             document.querySelectorAll('input[name="tempPreset"]').forEach(r => r.checked = false);
             updateSlider();
             this.applyTemperatureFilter();
-        });
-
-        // Preset checkbox handling
-        presetCheckboxes.forEach(cb => {
-            cb.addEventListener('change', function() {
-                const pMin = parseInt(this.getAttribute('data-min'));
-                const pMax = parseInt(this.getAttribute('data-max'));
-                // When a preset is checked, add its range to currentFilters.temperature
-                if (this.checked) {
-                    // If shift/ctrl is NOT held, clear other presets (allow multi-select if user holds ctrl)
-                    if (!window.event || !window.event.ctrlKey) {
-                        presetCheckboxes.forEach(other => { if (other !== this) other.checked = false; });
-                        self.currentFilters.temperature = [];
-                    }
-                    const rangeStr = `${pMin}-${pMax}`;
-                    if (!self.currentFilters.temperature.includes(rangeStr)) {
-                        self.currentFilters.temperature.push(rangeStr);
-                    }
-                    // set slider to this preset
-                    tempMin.value = pMin;
-                    tempMax.value = pMax;
-                    updateSlider();
-                    self.applyFilters();
-                } else {
-                    // remove range
-                    const rangeStr = `${pMin}-${pMax}`;
-                    self.currentFilters.temperature = self.currentFilters.temperature.filter(r => r !== rangeStr);
-                    // if no presets remain checked, set slider to full range
-                    const anyChecked = presetCheckboxes.some(x => x.checked);
-                    if (!anyChecked) {
-                        tempMin.value = 0;
-                        tempMax.value = parseInt(tempMax.max) || 3000;
-                        updateSlider();
-                    }
-                    self.applyFilters();
-                }
-            });
         });
 
         tempMinInput.addEventListener('input', function() {
@@ -298,6 +252,23 @@ class CatalogManager {
         const tempMax = parseInt(document.getElementById('tempMax').value);
         
         this.currentFilters.temperature = [`${tempMin}-${tempMax}`];
+        this.currentPage = 1;
+        this.applyFilters();
+    }
+
+    applyPresetTemperature(presetToken) {
+        console.log('applyPresetTemperature called with:', presetToken);
+        
+        // Handle "preset:none" - clear temperature filter
+        if (presetToken === 'preset:none') {
+            this.currentFilters.temperature = [];
+            this.currentPage = 1;
+            this.applyFilters();
+            return;
+        }
+        
+        // For other presets like "preset:to3000", apply temperature filter
+        this.currentFilters.temperature = [presetToken];
         this.currentPage = 1;
         this.applyFilters();
     }
@@ -468,7 +439,7 @@ class CatalogManager {
                         }
                     } else if (filterType === 'визирование') {
                         // selectedValues may include viz_small, viz_medium, viz_large
-                        const pv = product.characteristics['визирование'] || product.characteristics['Показатель визирования'] || '';
+                        const pv = product.characteristics.визирование || '';
                         const m = String(pv).match(/(\d+(?:\.\d+)?)/);
                         const num = m ? parseFloat(m[1]) : NaN;
                         const matchesViz = selectedValues.some(sel => {
@@ -480,11 +451,11 @@ class CatalogManager {
                         });
                         if (!matchesViz) return false;
                     } else if (filterType === 'госреестр') {
-                        if (product.characteristics[filterType] !== 'да') {
+                        if (product.characteristics.госреестр !== 'внесен' && product.characteristics.госреестр !== 'да') {
                             return false;
                         }
-                    } else if (filterType === 'малоразмерныеОбъекты') {
-                        if (product.characteristics['Малоразмерные объекты'] !== 'да') {
+                    } else if (filterType === 'для_малых_объектов') {
+                        if (product.characteristics.для_малых_объектов !== 'позволяет' && product.characteristics.для_малых_объектов !== 'да') {
                             return false;
                         }
                     } else {
@@ -522,35 +493,28 @@ class CatalogManager {
 
     checkTemperatureFilter(product, selectedRanges) {
         const bounds = this.getTemperatureBounds(product);
-        // Don't filter if we can't determine temperature bounds
+        // If we can't determine temperature bounds (NaN), exclude from temperature filters
         if (!Number.isFinite(bounds.min) || !Number.isFinite(bounds.max)) {
-            // If both are exactly 0, still try to match
-            if (bounds.min === 0 && bounds.max === 0) {
-                // This product has no temperature data
-                return false;
-            }
+            return false;
         }
         
         return selectedRanges.some(range => {
             if (String(range).startsWith('preset:')) {
                 switch (range) {
                     case 'preset:to3000':
-                        // All products with max <= 3000
-                        return bounds.max <= 3000;
+                        // Products with max exactly 3000
+                        return bounds.max === 3000;
                     case 'preset:to1800':
-                        // Products with max <= 1800 OR (250-2000)
-                        if (bounds.max <= 1800) return true;
-                        if (bounds.min === 250 && bounds.max === 2000) return true;
-                        return false;
+                        // Products with max exactly 1800 or 2000
+                        return bounds.max === 1800 || bounds.max === 2000;
                     case 'preset:250-2000':
-                        // Only products with exactly 250-2000
+                        // Only products with range exactly 250-2000
                         return bounds.min === 250 && bounds.max === 2000;
                     case 'preset:200-1200':
-                        // Products with (200-1200) OR (300-1400)
-                        if ((bounds.min === 200 && bounds.max === 1200) || (bounds.min === 300 && bounds.max === 1400)) return true;
-                        return false;
+                        // Only products with range exactly 200-1200
+                        return bounds.min === 200 && bounds.max === 1200;
                     case 'preset:from0':
-                        // Products starting from 0
+                        // Products starting from 0 (min must be 0)
                         return bounds.min === 0;
                     default:
                         return false;
@@ -567,45 +531,12 @@ class CatalogManager {
     // Try to extract numeric temperature bounds even if only a string range is present
     getTemperatureBounds(product) {
         const ch = product.characteristics || {};
-        let pMin = Number(ch.температураМин);
-        let pMax = Number(ch.температураМакс);
+        let pMin = Number(ch.температура_мин);
+        let pMax = Number(ch.температура_макс);
 
         // Fallback: parse from text range like "200-1200°С" or "0 ... 3000"
         if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
-            const rangeStr = ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['диапазон'] || '';
-            const nums = String(rangeStr).match(/-?\d+/g);
-            if (nums && nums.length >= 2) {
-                pMin = Number(nums[0]);
-                pMax = Number(nums[1]);
-            }
-        }
-
-        // If still invalid, mark as not filterable
-        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
-            return { min: NaN, max: NaN };
-        }
-        return { min: pMin, max: pMax };
-    }
-
-    applyPresetTemperature(presetToken) {
-        console.log('applyPresetTemperature called with:', presetToken);
-        // Note: радиокнопки используются для выбора, элементы tempMin/tempMax не нужны
-        
-        console.log('Setting currentFilters.temperature to:', [presetToken]);
-        this.currentFilters.temperature = [presetToken];
-        this.currentPage = 1;
-        this.applyFilters();
-    }
-
-    // Try to extract numeric temperature bounds even if only a string range is present
-    getTemperatureBounds(product) {
-        const ch = product.characteristics || {};
-        let pMin = Number(ch.температураМин);
-        let pMax = Number(ch.температураМакс);
-
-        // Fallback: parse from text range like "200-1200°С" or "0 ... 3000"
-        if (!Number.isFinite(pMin) || !Number.isFinite(pMax)) {
-            const rangeStr = ch['Диапазон измерений температуры'] || ch['Диапазон'] || ch['диапазон'] || '';
+            const rangeStr = ch.диапазон || '';
             const nums = String(rangeStr).match(/-?\d+/g);
             if (nums && nums.length >= 2) {
                 pMin = Number(nums[0]);
@@ -632,9 +563,9 @@ class CatalogManager {
                 case 'price_desc':
                     return b.price - a.price;
                 case 'temp_asc':
-                    return a.characteristics.температураМин - b.characteristics.температураМин;
+                    return a.characteristics.температура_мин - b.characteristics.температура_мин;
                 case 'temp_desc':
-                    return b.characteristics.температураМакс - a.characteristics.температураМакс;
+                    return b.characteristics.температура_макс - a.characteristics.температура_макс;
                 default:
                     return 0;
             }
@@ -660,15 +591,15 @@ class CatalogManager {
         this.currentFilters = {
             temperature: [],
             визирование: [],
-            погрешность: [],
-            спектральныйДиапазон: [],
             принципДействия: [],
             материалы: [],
+            особенности: [],
             исполнение: [],
             быстродействие: [],
             точность: [],
             устройствоВизирования: [],
-            госреестр: []
+            госреестр: [],
+            для_малых_объектов: []
         };
         this.searchQuery = '';
         this.sortBy = 'popular';
@@ -964,21 +895,22 @@ class CatalogManager {
         };
         const characteristics = product.characteristics || {};
         let exec = Array.isArray(characteristics.исполнение) ? characteristics.исполнение.join(', ') : (characteristics.исполнение || 'Не указано');
-        let materials = Array.isArray(characteristics['Измеряемые материалы и среды']) ? characteristics['Измеряемые материалы и среды'].join(', ') : (characteristics['Измеряемые материалы и среды'] || 'Не указаны');
-        let features = Array.isArray(characteristics['Особенности применения']) ? characteristics['Особенности применения'].join(', ') : (characteristics['Особенности применения'] || 'Не указаны');
+        let materials = Array.isArray(characteristics.материалы) ? characteristics.материалы.join(', ') : (characteristics.материалы || 'Не указаны');
+        let features = Array.isArray(characteristics.особенности) ? characteristics.особенности.join(', ') : (characteristics.особенности || 'Не указаны');
         // Gallery: main image + thumbnails
         let mainImageHtml = '';
         let thumbsHtml = '';
+        const escapedTitle = escapeHtml(product.title);
         if (Array.isArray(product.photos) && product.photos.length) {
             const first = product.photos[0];
-            mainImageHtml = `<img id="popup-main-img" src="${first}" alt="${product.title}">`;
+            mainImageHtml = `<img id="popup-main-img" src="${first}" alt="${escapedTitle}" onerror="this.src='./images/no-image.jpg'">`;
             thumbsHtml = product.photos.map((url, idx) => `
                 <div class="popup__thumbnail" data-src="${url}" data-index="${idx}">
-                    <img src="${url}" alt="${product.title}">
+                    <img src="${url}" alt="${escapedTitle}" onerror="this.src='./images/no-image.jpg'">
                 </div>
             `).join('');
         } else if (product.image) {
-            mainImageHtml = `<img id="popup-main-img" src="${product.image}" alt="${product.title}">`;
+            mainImageHtml = `<img id="popup-main-img" src="${product.image}" alt="${escapedTitle}" onerror="this.src='./images/no-image.jpg'">`;
             thumbsHtml = '';
         }
         let sku = Array.isArray(product.sku) ? product.sku.join(', ') : (product.sku || 'Не указан');
@@ -1030,11 +962,11 @@ class CatalogManager {
                         </div>
                         <div class="popup__spec">
                             <strong>Спектральный диапазон:</strong>
-                            <span>${characteristics.спектральныйДиапазон || 'Не указан'}</span>
+                            <span>${characteristics.спектральный_диапазон || 'Не указан'}</span>
                         </div>
                         <div class="popup__spec">
                             <strong>Принцип действия:</strong>
-                            <span>${characteristics.принципДействия || 'Не указан'}</span>
+                            <span>${characteristics.принцип_действия || 'Не указан'}</span>
                         </div>
                         <div class="popup__spec">
                             <strong>Измеряемые материалы и среды:</strong>
@@ -1054,16 +986,16 @@ class CatalogManager {
                         </div>
                         <div class="popup__spec">
                             <strong>Устройство визирования:</strong>
-                            <span>${characteristics.устройствоВизирования || 'Не указано'}</span>
+                            <span>${characteristics.устройство_визирования || 'Не указано'}</span>
                         </div>
                         <div class="popup__spec">
                             <strong>Госреестр:</strong>
-                            <span>${characteristics.госреестр === 'да' ? 'Внесен' : 'Не внесен'}</span>
+                            <span>${characteristics.госреестр === 'внесен' || characteristics.госреестр === 'да' ? 'Внесен' : 'Не внесен'}</span>
                         </div>
-                        ${characteristics['Малоразмерные объекты'] === 'да' ? `
+                        ${characteristics.для_малых_объектов === 'позволяет' || characteristics.для_малых_объектов === 'да' ? `
                         <div class="popup__spec">
-                            <strong>Малоразмерные объекты:</strong>
-                            <span>Да</span>
+                            <strong>Для малоразмерных объектов:</strong>
+                            <span>${characteristics.для_малых_объектов === 'позволяет' ? 'Позволяет' : 'Да'}</span>
                         </div>
                         ` : ''}
                     </div>

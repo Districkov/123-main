@@ -95,21 +95,21 @@ function createProduct(p) {
     p.price || 0,
     p.quantity || 0,
     p.description || '',
-    ch['диапазон'] || ch['Диапазон измерений температуры'] || '',
-    ch['погрешность'] || ch['Погрешность'] || '',
-    ch['визирование'] || ch['Показатель визирования'] || '',
-    ch['принцип_действия'] || ch['Принцип действия'] || '',
-    ch['спектральный_диапазон'] || ch['Спектральный диапазон'] || '',
-    JSON.stringify(ch['материалы'] || ch['Измеряемые материалы и среды'] || []),
-    JSON.stringify(ch['исполнение'] || ch['Исполнение'] || []),
-    ch['быстродействие'] || ch['Быстродействие'] || '',
-    ch['точность'] || ch['Точность'] || '',
-    ch['устройство_визирования'] || ch['Устройство визирования'] || '',
-    ch['госреестр'] || ch['Госреестр'] || '',
-    ch['для_малых_объектов'] || ch['Для малых объектов'] || '',
-    JSON.stringify(ch['особенности'] || ch['Особенности применения'] || []),
-    parseInt(ch['температура_мин']) || parseInt(ch['Температура мин']) || 0,
-    parseInt(ch['температура_макс']) || parseInt(ch['Температура макс']) || 0,
+    ch['диапазон'] || '',
+    ch['погрешность'] || '',
+    ch['визирование'] || '',
+    ch['принцип_действия'] || '',
+    ch['спектральный_диапазон'] || '',
+    JSON.stringify(ch['материалы'] || []),
+    JSON.stringify(ch['исполнение'] || []),
+    ch['быстродействие'] || '',
+    ch['точность'] || '',
+    ch['устройство_визирования'] || '',
+    ch['госреестр'] || '',
+    ch['для_малых_объектов'] || '',
+    JSON.stringify(ch['особенности'] || []),
+    parseInt(ch['температура_мин']) || 0,
+    parseInt(ch['температура_макс']) || 0,
     seo.title || seo['seo_title'] || p.title || '',
     seo.description || seo['seo_description'] || p.description || '',
     seo.keywords || seo['seo_keywords'] || '',
@@ -124,10 +124,24 @@ function updateProduct(id, p) {
   const now = new Date().toISOString();
   const existing = getProductById(id);
   if (!existing) return null;
+  
+  // Правильный merge для characteristics с поддержкой разных форматов ключей
+  const existingCh = existing.characteristics || {};
+  const pCh = p.characteristics || {};
+  
+  // Мержим characteristics, учитывая русские и английские названия
+  const mergedCh = { ...existingCh };
+  for (const key of Object.keys(pCh)) {
+    // Всегда используем русские ключи (snake_case)
+    mergedCh[key] = pCh[key];
+  }
+  
   const merged = {
     ...existing,
-    ...p
+    ...p,
+    characteristics: mergedCh
   };
+  
   const ch = merged.characteristics || {};
   const seo = merged.seo || {};
   const stmt = db.prepare(`UPDATE products SET sku = ?, category = ?, title = ?, photos = ?, price = ?, quantity = ?, description = ?, "диапазон" = ?, "погрешность" = ?, "визирование" = ?, "принцип_действия" = ?, "спектральный_диапазон" = ?, "материалы" = ?, "исполнение" = ?, "быстродействие" = ?, "точность" = ?, "устройство_визирования" = ?, "госреестр" = ?, "для_малых_объектов" = ?, "особенности" = ?, "температура_мин" = ?, "температура_макс" = ?, seo_title = ?, seo_description = ?, seo_keywords = ?, updatedAt = ? WHERE id = ?`);
@@ -139,21 +153,21 @@ function updateProduct(id, p) {
     merged.price || 0,
     merged.quantity || 0,
     merged.description || '',
-    ch['диапазон'] || ch['Диапазон измерений температуры'] || '',
-    ch['погрешность'] || ch['Погрешность'] || '',
-    ch['визирование'] || ch['Показатель визирования'] || '',
-    ch['принцип_действия'] || ch['Принцип действия'] || '',
-    ch['спектральный_диапазон'] || ch['Спектральный диапазон'] || '',
-    JSON.stringify(ch['материалы'] || ch['Измеряемые материалы и среды'] || []),
-    JSON.stringify(ch['исполнение'] || ch['Исполнение'] || []),
-    ch['быстродействие'] || ch['Быстродействие'] || '',
-    ch['точность'] || ch['Точность'] || '',
-    ch['устройство_визирования'] || ch['Устройство визирования'] || '',
-    ch['госреестр'] || ch['Госреестр'] || '',
-    ch['для_малых_объектов'] || ch['Для малых объектов'] || '',
-    JSON.stringify(ch['особенности'] || ch['Особенности применения'] || []),
-    parseInt(ch['температура_мин']) || parseInt(ch['Температура мин']) || 0,
-    parseInt(ch['температура_макс']) || parseInt(ch['Температура макс']) || 0,
+    ch['диапазон'] || '',
+    ch['погрешность'] || '',
+    ch['визирование'] || '',
+    ch['принцип_действия'] || '',
+    ch['спектральный_диапазон'] || '',
+    JSON.stringify(ch['материалы'] || []),
+    JSON.stringify(ch['исполнение'] || []),
+    ch['быстродействие'] || '',
+    ch['точность'] || '',
+    ch['устройство_визирования'] || '',
+    ch['госреестр'] || '',
+    ch['для_малых_объектов'] || '',
+    JSON.stringify(ch['особенности'] || []),
+    parseInt(ch['температура_мин']) || 0,
+    parseInt(ch['температура_макс']) || 0,
     seo.title || seo['seo_title'] || merged.title || '',
     seo.description || seo['seo_description'] || merged.description || '',
     seo.keywords || seo['seo_keywords'] || '',
