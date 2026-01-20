@@ -84,6 +84,40 @@ router.post('/products', (req, res) => {
   }
 });
 
+// UPDATE product
+router.put('/products/:id', upload.single('image'), (req, res) => {
+  try {
+    const id = req.params.id;
+    const product = db.getProductById(id);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    // Update with new data - передаём ВСЕ поля из req.body
+    const updated = {
+      ...product,
+      ...req.body,  // Передаём все поля из запроса (включая characteristics)
+      name: req.body.name || product.name,
+      description: req.body.description || product.description,
+      price: req.body.price !== undefined ? parseFloat(req.body.price) : product.price,
+      category: req.body.category || product.category,
+      characteristics: req.body.characteristics || product.characteristics,
+      seo: req.body.seo || product.seo
+    };
+    
+    // Handle image upload if provided
+    if (req.file) {
+      updated.image = `/uploads/products/${req.file.filename}`;
+    }
+    
+    db.updateProduct(id, updated);
+    res.json({ success: true, product: updated });
+  } catch (e) {
+    console.error('auth PUT product error:', e);
+    res.status(500).json({ error: 'Failed to update product' });
+  }
+});
+
 // FILE UPLOAD endpoint for product images
 // Field name: "files" (multiple)
 router.post('/upload', upload.array('files', 10), (req, res) => {
@@ -100,18 +134,6 @@ router.post('/upload', upload.array('files', 10), (req, res) => {
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: 'Upload failed', details: error.message });
-  }
-});
-
-// UPDATE product
-router.put('/products/:id', (req, res) => {
-  try {
-    const updated = db.updateProduct(req.params.id, req.body);
-    if (!updated) return res.status(404).json({ error: 'Product not found' });
-    res.json(updated);
-  } catch (e) {
-    console.error('auth PUT product error:', e);
-    res.status(500).json({ error: 'Failed to update product' });
   }
 });
 

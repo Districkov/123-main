@@ -3,7 +3,12 @@ const path = require('path');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 
+// Load environment variables
+require('dotenv').config();
+
 const app = express();
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const PORT = process.env.PORT || 3000;
 
 // CORS настройки
 app.use((req, res, next) => {
@@ -24,6 +29,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const backendRoot = __dirname;
 const frontendPath = path.join(backendRoot, '..', 'frontend');
 
+// VirtualHost роутер для разных доменов
+const mainRouter = express.Router();
+const adminRouter = express.Router();
+
 // initialize DB (if present)
 try {
   const db = require('./db');
@@ -34,7 +43,7 @@ try {
 }
 
 // ФИКСИРОВАННЫЙ ПАРОЛЬ
-const FIXED_ADMIN_PASSWORD = '8uyPRgEmLl';
+const FIXED_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '8uyPRgEmLl';
 
 // Middleware для проверки админского токена
 function requireAdminToken(req, res, next) {
@@ -117,32 +126,44 @@ app.post('/admin/verify-password', (req, res) => {
   }
 });
 
+// Serve uploads directory (static files)
+const uploadsPath = path.join(backendRoot, 'uploads');
+app.use('/uploads', express.static(uploadsPath));
+
 // Serve data JSONs
-app.get('/data/:name', (req, res) => {
-  const name = req.params.name;
-  const allowed = ['articles.json', 'products.json', 'project.json'];
-  if (!allowed.includes(name)) return res.status(404).end();
-  const file = path.join(backendRoot, 'data', name);
-  if (!fs.existsSync(file)) return res.status(404).end();
-  res.sendFile(file);
+// Статические файлы для основного сайта
+mainRouter.use(express.static(frontendPath));
+
+// API endpoints основного сайта
+mainRouter.use('/api/products', require('./routes/products'));
+mainRouter.use('/api/articles', require('./routes/articles'));
+
+// Legacy routes
+mainRouter.use('/products', require('./routes/products'));
+mainRouter.use('/articles', require('./routes/articles'));
+
+// Auth routes (для админ-панели)
+mainRouter.use('/auth', require('./routes/auth'));
+mainRouter.use('/admin', require('./routes/admin'));
+
+// SPA fallback для основного домена
+mainRouter.get('*', (req, res) => {
+  const file = path.join(frontendPath, req.path);
+  if (fs.existsSync(file) && fs.statSync(file).isFile()) {
+    return res.sendFile(file);
+  }
+  return res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-// Public API endpoints
-app.use('/api/products', require('./routes/products'));
-app.use('/api/articles', require('./routes/articles'));
+// ======================== АДМИН ДОМЕН (tremokony.admin.com) ========================
+// Админ-панель доступна для всех пользователей (без авторизации)
 
-// Keep previous non-/api routes for compatibility
-app.use('/products', require('./routes/products'));
-app.use('/articles', require('./routes/articles'));
+// Admin routes (открыты для всех)
+adminRouter.use('/admin', require('./routes/admin'));
+adminRouter.use('/auth', require('./routes/auth'));
 
-// Admin routes (require auth)
-app.use('/admin', requireAdminToken, require('./routes/admin'));
-
-// Auth routes (require auth)
-app.use('/auth', requireAdminToken, require('./routes/auth'));
-
-// Admin reinit endpoint (protected)
-app.post('/admin/reinit-db', requireAdminToken, (req, res) => {
+// Admin reinit endpoint
+adminRouter.post('/admin/reinit-db', (req, res) => {
   try {
     const db = require('./db');
     if (db && typeof db.reinitFromJson === 'function') {
@@ -156,24 +177,48 @@ app.post('/admin/reinit-db', requireAdminToken, (req, res) => {
   }
 });
 
-// Serve uploaded files (images) from backend/uploads at /uploads
-app.use('/uploads', express.static(path.join(backendRoot, 'uploads')));
-
-// Статические файлы
-app.use(express.static(frontendPath));
-
-// SPA fallback
-app.get('*', (req, res) => {
-  const file = path.join(frontendPath, req.path);
-  if (fs.existsSync(file) && fs.statSync(file).isFile()) {
-    return res.sendFile(file);
+// Serve admin panel (admin.html)
+adminRouter.get('/', (req, res) => {
+  const adminFile = path.join(frontendPath, 'admin.html');
+  if (fs.existsSync(adminFile)) {
+    return res.sendFile(adminFile);
   }
-  return res.sendFile(path.join(frontendPath, 'index.html'));
+  return res.status(404).json({ error: 'Admin panel not found' });
 });
 
-const port = process.env.PORT || 3000;
+// ======================== РОУТЕР VIRTUALHOST ========================
+app.use((req, res, next) => {
+  const hostname = req.hostname || 'localhost';
+  console.log(`[VirtualHost] Request to: ${hostname} ${req.method} ${req.path}`);
+  
+  // Админ домен
+  if (hostname === 'tremokony.admin.com' || hostname === 'admin.tremokony.com') {
+    return adminRouter(req, res, next);
+  }
+  
+  // Основной домен (все варианты)
+  if (hostname === 'termokont.ru' || 
+      hostname === 'www.termokont.ru' || 
+      hostname === 'localhost' || 
+      hostname === '127.0.0.1' ||
+      hostname === 'termokont' ||
+      hostname === 'termokont.local' ||
+      hostname === '185.176.94.21') {
+    return mainRouter(req, res, next);
+  }
+  
+  // Для локальной разработки - показываем основной сайт по умолчанию
+  mainRouter(req, res, next);
+});
+
+const port = PORT;
 app.listen(port, () => {
-  console.log('Server started on port', port);
-  console.log('Fixed admin password:', FIXED_ADMIN_PASSWORD);
-  console.log('Backend root:', backendRoot);
+  console.log(`\n${'='.repeat(50)}`);
+  console.log(`Environment: ${NODE_ENV.toUpperCase()}`);
+  console.log(`Server started on port ${port}`);
+  console.log(`Backend root: ${backendRoot}`);
+  console.log('\n=== VirtualHost Configuration ===');
+  console.log('Main domain: termokont.ru (http://termokont.ru:' + port + ')');
+  console.log('Admin domain: tremokony.admin.com (http://tremokony.admin.com:' + port + ')');
+  console.log(`${'='.repeat(50)}\n`);
 });

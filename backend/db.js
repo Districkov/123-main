@@ -120,6 +120,30 @@ function createProduct(p) {
   return created;
 }
 
+// Save products to JSON file
+function persistProductsToJson() {
+  try {
+    const products = db.prepare(`SELECT * FROM products ORDER BY rowid DESC`).all();
+    const normalizedProducts = products.map(normalizeProductRow);
+    fs.writeFileSync(productsJsonFile, JSON.stringify(normalizedProducts, null, 2), 'utf8');
+    console.log('Products saved to JSON');
+  } catch (err) {
+    console.error('Error persisting products to JSON:', err);
+  }
+}
+
+// Save articles to JSON file
+function persistArticlesToJson() {
+  try {
+    const articles = db.prepare(`SELECT * FROM articles ORDER BY rowid DESC`).all();
+    const normalizedArticles = articles.map(normalizeArticleRow);
+    fs.writeFileSync(articlesJsonFile, JSON.stringify(normalizedArticles, null, 2), 'utf8');
+    console.log('Articles saved to JSON');
+  } catch (err) {
+    console.error('Error persisting articles to JSON:', err);
+  }
+}
+
 function updateProduct(id, p) {
   const now = new Date().toISOString();
   const existing = getProductById(id);
